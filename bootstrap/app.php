@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\AuthenticateContext;
 use App\Http\Middleware\EnsureTenantHost;
+use App\Http\Middleware\EnsureTenantPermission;
+use App\Http\Middleware\EnsureTenantPlanFeature;
 use App\Http\Middleware\EnsureTenantRole;
 use App\Http\Middleware\IdentifyTenant;
 use App\Http\Middleware\RedirectIfAuthenticatedContext;
@@ -27,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest.context' => RedirectIfAuthenticatedContext::class,
             'tenant.host' => EnsureTenantHost::class,
             'tenant.role' => EnsureTenantRole::class,
+            'tenant.permission' => EnsureTenantPermission::class,
+            'tenant.plan' => EnsureTenantPlanFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

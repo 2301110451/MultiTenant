@@ -1,15 +1,38 @@
 <x-tenant-layout title="Reports" breadcrumb="Reports">
 
-    <div class="px-6 py-8 sm:px-10">
-        <div class="mb-8">
+    <div class="px-6 py-8 sm:px-10" data-live-endpoint="{{ route('tenant.realtime.reports') }}" data-live-interval="12000">
+        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
             <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Reports &amp; Analytics</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Included with your subscription when the plan supports analytics.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('tenant.reports.download') }}"
+                    class="inline-flex items-center justify-center gap-2 t-btn-primary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5v-9m0 9l3-3m-3 3l-3-3M4.5 18.75h15"/>
+                    </svg>
+                    Download PDF
+                </a>
+                @if(\App\Support\Pricing::allows('export_reports_csv'))
+                    <a href="{{ route('tenant.reports.download.csv') }}"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        CSV
+                    </a>
+                @endif
+                @if(\App\Support\Pricing::allows('export_reports_excel'))
+                    <a href="{{ route('tenant.reports.download.excel') }}"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        Excel
+                    </a>
+                @endif
+            </div>
         </div>
 
         <div class="grid gap-6 md:grid-cols-2">
             <div class="t-card p-6">
                 <h3 class="font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 text-tenant-accent opacity-90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
                     </svg>
                     Most Reserved Facilities
@@ -18,7 +41,7 @@
                     @forelse($topFacilities as $f)
                         <li class="flex items-center justify-between text-slate-700 dark:text-slate-300">
                             <span>{{ $f->name }}</span>
-                            <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 px-2 py-0.5 rounded-full">{{ $f->reservations_count }}</span>
+                            <span class="text-xs font-semibold text-tenant-accent bg-accent-soft border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded-full">{{ $f->reservations_count }}</span>
                         </li>
                     @empty
                         <li class="text-slate-400 dark:text-slate-500">No data yet</li>
@@ -53,7 +76,18 @@
                     Revenue (paid payments)
                 </h3>
                 <p class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
-                    &#8369;{{ number_format($revenue ?? 0, 2) }}
+                    &#8369;<span data-live-key="revenue">{{ number_format($revenue ?? 0, 2) }}</span>
+                </p>
+            </div>
+
+            <div class="t-card p-6">
+                <h3 class="font-bold text-slate-900 dark:text-slate-100 mb-2">Monthly Utilization</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $monthlyUtilization['period_label'] ?? now()->format('F Y') }}</p>
+                <p class="mt-2 text-xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                    {{ $monthlyUtilization['reservation_total'] ?? 0 }} reservations
+                </p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    {{ $monthlyUtilization['facility_usage_count'] ?? 0 }} facilities used this month
                 </p>
             </div>
 
@@ -64,7 +98,15 @@
                     </svg>
                     Damage Reports Logged
                 </h3>
-                <p class="text-3xl font-extrabold text-red-600 dark:text-red-400 mt-2">{{ $damageCount }}</p>
+                <p class="text-3xl font-extrabold text-red-600 dark:text-red-400 mt-2" data-live-key="damageCount">{{ $damageCount }}</p>
+            </div>
+
+            <div class="t-card p-6">
+                <h3 class="font-bold text-slate-900 dark:text-slate-100 mb-2">Damage Charges Created</h3>
+                <p class="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2" data-live-key="damageChargeCount">{{ $damageChargeCount ?? 0 }}</p>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Pending payments: <span data-live-key="pendingDamagePayments">{{ $pendingDamagePayments ?? 0 }}</span>
+                </p>
             </div>
         </div>
     </div>

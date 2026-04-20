@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PlanController extends Controller
@@ -24,12 +25,18 @@ class PlanController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:plans,slug'],
-            'monthly_reservation_limit' => ['nullable', 'integer', 'min:1'],
-            'features_json' => ['nullable', 'string'],
-        ]);
+        try {
+            $data = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'slug' => ['required', 'string', 'max:255', 'unique:plans,slug'],
+                'monthly_reservation_limit' => ['nullable', 'integer', 'min:1'],
+                'features_json' => ['nullable', 'string'],
+            ]);
+        } catch (ValidationException $e) {
+            return redirect()->route('central.plans.index', ['create' => '1'])
+                ->withErrors($e->validator)
+                ->withInput();
+        }
 
         $features = $this->resolveFeatures($request, $data['features_json'] ?? null);
 
@@ -88,7 +95,7 @@ class PlanController extends Controller
 
         // Otherwise build from feature_* checkbox fields.
         $knownKeys = ['reports', 'qr', 'payments'];
-        $features  = [];
+        $features = [];
         foreach ($knownKeys as $key) {
             if ($request->boolean('feature_'.$key)) {
                 $features[] = $key;

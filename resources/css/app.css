@@ -2,21 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ══════════════════════════════════════════════════════════════════
+   DESIGN TOKEN SYSTEM
+   Global CSS custom properties for backgrounds, surfaces, depth,
+   and elevation. Defined once here, referenced everywhere.
+   Per-tenant overrides only need to patch a handful of variables —
+   zero HTML or Tailwind class changes required.
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+    /* ── Page backgrounds (layered hierarchy) ─────────────────── */
+    --bg-primary:      #f8fafc;
+    --bg-secondary:    #f1f5f9;
+    --bg-surface:      #ffffff;
+    --bg-elevated:     #ffffff;
+    --bg-accent-soft:  #eff6ff;
+
+    /* ── Chrome surfaces ──────────────────────────────────────── */
+    --bg-sidebar:       #0F172A;
+    --bg-sidebar-hover: #1a2942;
+    --bg-topbar:        rgba(255, 255, 255, 0.85);
+
+    /* ── Borders (semantic) ───────────────────────────────────── */
+    --border-subtle:   #e2e8f0;
+    --border-muted:    #cbd5e1;
+
+    /* ── Elevation shadows (semantic 3-level system) ─────────── */
+    --shadow-card:
+        0 1px 3px 0    rgb(15 23 42 / 0.04),
+        0 4px 14px -4px rgb(15 23 42 / 0.06);
+    --shadow-elevated:
+        0 4px 8px -2px  rgb(15 23 42 / 0.06),
+        0 12px 28px -6px rgb(15 23 42 / 0.10);
+    --shadow-overlay:
+        0 24px 56px -12px rgb(15 23 42 / 0.20),
+        0 8px 16px -4px  rgb(15 23 42 / 0.08);
+
+    /* ── Tenant accent tokens (plan-patched at runtime) ───────── */
+    --tenant-accent:            #3181E5;
+    --tenant-accent-soft:       rgba(49, 129, 229, 0.07);
+    --tenant-accent-border:     rgba(49, 129, 229, 0.17);
+    --tenant-nav-active-start:  #2563eb;
+    --tenant-nav-active-end:    #3181E5;
+    --tenant-nav-shadow:        rgba(49, 129, 229, 0.28);
+
+    /* ── Super Admin accent tokens ──────────────────────────── */
+    --central-accent:          #6366F1;
+    --central-accent-soft:     rgba(99, 102, 241, 0.08);
+    --central-accent-secondary: #8B5CF6;
+    --central-accent-highlight: #22D3EE;
+
+    /* ── Transition timing ──────────────────────────────────── */
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode token overrides ──────────────────────────────────── */
+.dark {
+    --bg-primary:      #080d18;
+    --bg-secondary:    #0f172a;
+    --bg-surface:      #111827;
+    --bg-elevated:     #1a2640;
+    --bg-accent-soft:  rgba(99, 102, 241, 0.08);
+
+    --bg-sidebar:       #050a12;
+    --bg-sidebar-hover: #0f1e30;
+    --bg-topbar:        rgba(15, 23, 42, 0.85);
+
+    --border-subtle:   #1e293b;
+    --border-muted:    #334155;
+
+    --shadow-card:
+        0 1px 3px 0    rgb(0 0 0 / 0.30),
+        0 6px 18px -6px rgb(0 0 0 / 0.40);
+    --shadow-elevated:
+        0 4px 8px -2px  rgb(0 0 0 / 0.35),
+        0 14px 32px -8px rgb(0 0 0 / 0.45);
+    --shadow-overlay:
+        0 20px 48px -12px rgb(0 0 0 / 0.65);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SUPER ADMIN THEME TOKENS
+   Applied via .central-theme class on <body> or ancestor.
+   ══════════════════════════════════════════════════════════════════ */
+.central-theme {
+    --bg-sidebar:       linear-gradient(180deg, #0F172A 0%, #020617 50%, #1E293B 100%);
+    --bg-sidebar-flat:  #0F172A;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TENANT PLAN ACCENT OVERRIDES
+   ══════════════════════════════════════════════════════════════════ */
+.plan-basic {
+    --tenant-accent:            #3181E5;
+    --tenant-accent-soft:       rgba(49, 129, 229, 0.07);
+    --tenant-accent-border:     rgba(49, 129, 229, 0.17);
+    --tenant-nav-active-start:  #2563eb;
+    --tenant-nav-active-end:    #3181E5;
+    --tenant-nav-shadow:        rgba(49, 129, 229, 0.28);
+}
+
+.plan-standard {
+    --tenant-accent:            #0284c7;
+    --tenant-accent-soft:       rgba(2, 132, 199, 0.07);
+    --tenant-accent-border:     rgba(2, 132, 199, 0.17);
+    --tenant-nav-active-start:  #0369a1;
+    --tenant-nav-active-end:    #0284c7;
+    --tenant-nav-shadow:        rgba(2, 132, 199, 0.28);
+}
+
+.plan-premium {
+    --tenant-accent:            #d97706;
+    --tenant-accent-soft:       rgba(217, 119, 6, 0.07);
+    --tenant-accent-border:     rgba(217, 119, 6, 0.17);
+    --tenant-nav-active-start:  #b45309;
+    --tenant-nav-active-end:    #d97706;
+    --tenant-nav-shadow:        rgba(217, 119, 6, 0.28);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BASE LAYER — Tokens and resets
+   ══════════════════════════════════════════════════════════════════ */
 @layer base {
     [x-cloak] {
         display: none !important;
     }
 
     body {
-        @apply bg-slate-50 text-neutral-700 antialiased;
+        @apply text-neutral-700 antialiased;
+        background-color: var(--bg-primary);
+        transition: background-color 0.3s var(--transition-smooth),
+                    color 0.3s var(--transition-smooth);
     }
 
     .dark body {
-        @apply bg-slate-950 text-slate-300;
+        @apply text-slate-300;
+        background-color: var(--bg-primary);
     }
 
     h1, h2, h3, h4, h5, h6 {
-        @apply text-neutral-900;
+        @apply text-neutral-900 tracking-tight;
     }
 
     .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
@@ -26,74 +150,205 @@
     input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
     select,
     textarea {
-        @apply rounded-lg border-border bg-white text-neutral-800 placeholder:text-neutral-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/25;
+        @apply rounded-xl border-border text-neutral-800 placeholder:text-neutral-400
+               focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200;
+        background-color: var(--bg-surface);
     }
 
     .dark input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
     .dark select,
     .dark textarea {
-        @apply border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-500;
+        @apply border-slate-600 text-slate-100 placeholder:text-slate-500;
+        background-color: var(--bg-elevated);
     }
 
-    button,
-    a {
+    button, a {
         @apply transition-all duration-200 ease-in-out;
+    }
+
+    ::selection {
+        background-color: rgba(99, 102, 241, 0.20);
+        color: inherit;
     }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   COMPONENT LAYER — Reusable design tokens
+   ══════════════════════════════════════════════════════════════════ */
 @layer components {
+
+    /* ── Surface cards ─────────────────────────────────────────── */
     .surface-card {
-        @apply rounded-xl border border-border bg-surface shadow-soft dark:bg-slate-900 dark:border-slate-700;
+        @apply rounded-2xl border dark:border-slate-700;
+        background-color: var(--bg-surface);
+        border-color: var(--border-subtle);
+        box-shadow: var(--shadow-card);
+        transition: box-shadow 0.3s var(--transition-smooth),
+                    transform 0.3s var(--transition-smooth);
+    }
+    .surface-card:hover {
+        box-shadow: var(--shadow-elevated);
     }
 
     .surface-panel {
-        @apply rounded-xl border border-border bg-surface-soft dark:bg-slate-800 dark:border-slate-700;
+        @apply rounded-2xl border dark:border-slate-700;
+        background-color: var(--bg-secondary);
+        border-color: var(--border-subtle);
     }
 
+    /* ── Glassmorphism card ─────────────────────────────────── */
+    .glass-card {
+        @apply rounded-2xl border;
+        background: rgba(255, 255, 255, 0.70);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-color: rgba(255, 255, 255, 0.40);
+        box-shadow: var(--shadow-card);
+    }
+    .dark .glass-card {
+        background: rgba(15, 23, 42, 0.60);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card-strong {
+        @apply rounded-2xl border;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(24px) saturate(200%);
+        -webkit-backdrop-filter: blur(24px) saturate(200%);
+        border-color: rgba(255, 255, 255, 0.50);
+        box-shadow: var(--shadow-elevated);
+    }
+    .dark .glass-card-strong {
+        background: rgba(15, 23, 42, 0.75);
+        border-color: rgba(255, 255, 255, 0.10);
+    }
+
+    /* ── Button system ─────────────────────────────────────────── */
     .btn-primary {
-        @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-soft transition-all duration-200 ease-in-out hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5
+               text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 ease-in-out
+               hover:bg-indigo-700 hover:shadow-indigo-500/30 hover:-translate-y-0.5
+               focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:ring-offset-2
+               active:translate-y-0 active:shadow-sm;
     }
 
     .btn-secondary {
-        @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-all duration-200 ease-in-out hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500/25 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border
+               px-5 py-2.5 text-sm font-semibold text-neutral-700 transition-all duration-200 ease-in-out
+               hover:border-slate-300 hover:-translate-y-0.5
+               focus:outline-none focus:ring-2 focus:ring-primary-500/25
+               dark:border-slate-600 dark:text-slate-200
+               active:translate-y-0;
+        background-color: var(--bg-surface);
+    }
+    .btn-secondary:hover {
+        background-color: var(--bg-secondary);
     }
 
+    .btn-danger {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5
+               text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all duration-200 ease-in-out
+               hover:bg-red-700 hover:shadow-red-500/30 hover:-translate-y-0.5
+               focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2
+               active:translate-y-0 active:shadow-sm;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
+               text-sm font-medium text-slate-600 dark:text-slate-400
+               hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200
+               transition-all duration-200;
+    }
+
+    /* ── Premium inputs ────────────────────────────────────────── */
     .input-premium {
-        @apply w-full rounded-lg border-border bg-white px-3.5 py-2.5 text-sm text-neutral-800 placeholder:text-neutral-400 transition-all duration-200 ease-in-out focus:border-primary-500 focus:ring-2 focus:ring-primary-500/25 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500;
+        @apply w-full rounded-xl border-border px-4 py-3 text-sm text-neutral-800
+               placeholder:text-neutral-400 transition-all duration-200 ease-in-out
+               focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:shadow-lg focus:shadow-indigo-500/5
+               dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500;
+        background-color: var(--bg-surface);
     }
 
     .label-premium {
-        @apply mb-1.5 block text-sm font-medium text-neutral-700 dark:text-slate-300;
+        @apply mb-2 block text-sm font-semibold text-neutral-700 dark:text-slate-300;
     }
 
-    /* Tenant card helper */
+    /* ── Alert / notification banners ─────────────────────────── */
+    .alert-success {
+        @apply flex items-start gap-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200
+               rounded-2xl px-5 py-4 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300;
+    }
+
+    .alert-warning {
+        @apply flex items-start gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200
+               rounded-2xl px-5 py-4 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300;
+    }
+
+    .alert-danger {
+        @apply flex items-start gap-3 text-sm text-red-800 bg-red-50 border border-red-200
+               rounded-2xl px-5 py-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300;
+    }
+
+    .alert-info {
+        @apply flex items-start gap-3 text-sm text-blue-800 bg-blue-50 border border-blue-200
+               rounded-2xl px-5 py-4 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300;
+    }
+
+    /* ── Tenant card helpers ─────────────────────────────────── */
     .t-card {
-        @apply bg-white border border-slate-200 rounded-2xl card-shadow dark:bg-slate-900 dark:border-slate-700;
+        @apply border border-slate-200 rounded-2xl dark:border-slate-700/60;
+        background-color: var(--bg-surface);
+        box-shadow: var(--shadow-card);
+        transition: box-shadow 0.3s var(--transition-smooth),
+                    transform 0.2s var(--transition-smooth);
+    }
+    .dark .t-card {
+        background-color: var(--bg-surface);
+    }
+    .t-card-hover:hover {
+        box-shadow: var(--shadow-elevated);
+        transform: translateY(-2px);
     }
 
     .t-label {
-        @apply block text-sm font-semibold text-slate-700 mb-1 dark:text-slate-300;
+        @apply block text-sm font-semibold text-slate-700 mb-1.5 dark:text-slate-300;
     }
 
     .t-input {
-        @apply w-full border-slate-300 rounded-xl text-sm px-3 py-2.5 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100;
+        @apply w-full border-slate-300 rounded-xl text-sm px-4 py-3
+               dark:border-slate-600 dark:text-slate-100
+               focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+               transition-all duration-200;
+        background-color: var(--bg-surface);
     }
 
     .t-textarea {
-        @apply w-full border-slate-300 rounded-xl text-sm px-3 py-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100;
+        @apply w-full border-slate-300 rounded-xl text-sm px-4 py-3
+               dark:border-slate-600 dark:text-slate-100
+               focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+               transition-all duration-200;
+        background-color: var(--bg-surface);
     }
 
-    /* Central admin card helpers */
+    /* ── Central admin card helpers ────────────────────────────── */
     .c-card {
-        @apply bg-white border border-slate-200 rounded-2xl card-shadow dark:bg-slate-900 dark:border-slate-700;
+        @apply border border-slate-200/80 rounded-2xl dark:border-slate-700/60;
+        background-color: var(--bg-surface);
+        box-shadow: var(--shadow-card);
+        transition: box-shadow 0.3s var(--transition-smooth);
+    }
+    .dark .c-card {
+        background-color: var(--bg-surface);
     }
 
     .c-thead tr {
-        @apply bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700;
+        @apply border-b border-slate-100 dark:border-slate-700;
+        background-color: var(--bg-secondary);
     }
 
     .c-thead th {
-        @apply text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-6 py-3.5;
+        @apply text-left text-xs font-semibold text-slate-500 dark:text-slate-400
+               uppercase tracking-wider px-6 py-3.5;
     }
 
     .c-tbody {
@@ -101,18 +356,348 @@
     }
 
     .c-tbody tr {
-        @apply hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors;
+        @apply hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors duration-150;
+    }
+
+    /* ── Status badge helpers ──────────────────────────────────── */
+    .badge-active {
+        @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+               bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+               ring-1 ring-emerald-200/50 dark:ring-emerald-800/30;
+    }
+
+    .badge-suspended {
+        @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+               bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+               ring-1 ring-red-200/50 dark:ring-red-800/30;
+    }
+
+    .badge-pending {
+        @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+               bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+               ring-1 ring-amber-200/50 dark:ring-amber-800/30;
+    }
+
+    .badge-info {
+        @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+               bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400
+               ring-1 ring-indigo-200/50 dark:ring-indigo-800/30;
+    }
+
+    /* ── Page section wrapper ──────────────────────────────────── */
+    .page-section {
+        @apply px-6 py-8 sm:px-10;
+    }
+
+    /* ── Divider ───────────────────────────────────────────────── */
+    .divider {
+        @apply border-t border-slate-100 dark:border-slate-800 my-6;
+    }
+
+    /* ── Accent-tinted highlight block (tenant-aware) ──────────── */
+    .bg-accent-soft {
+        background-color: var(--tenant-accent-soft);
+        border-color:     var(--tenant-accent-border);
+    }
+
+    /* ── Inset content zone ────────────────────────────────────── */
+    .bg-inset {
+        background-color: var(--bg-secondary);
+    }
+
+    /* Tenant primary actions */
+    .t-btn-primary {
+        @apply rounded-xl text-sm font-semibold text-white px-5 py-2.5 inline-flex items-center justify-center
+               transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0;
+        background-color: var(--tenant-accent);
+        box-shadow: 0 4px 14px -3px var(--tenant-nav-shadow);
+    }
+    .t-btn-primary:hover {
+        filter: brightness(0.92);
+        box-shadow: 0 6px 20px -3px var(--tenant-nav-shadow);
+    }
+    .t-btn-primary:focus-visible {
+        outline: 2px solid var(--tenant-accent);
+        outline-offset: 2px;
+    }
+
+    .t-link {
+        @apply font-semibold transition-colors;
+        color: var(--tenant-accent);
+    }
+    .t-link:hover {
+        filter: brightness(0.88);
+    }
+
+    .bg-tenant-accent {
+        background-color: var(--tenant-accent);
+    }
+
+    .text-tenant-accent {
+        color: var(--tenant-accent);
+    }
+
+    .t-checkbox-accent {
+        accent-color: var(--tenant-accent);
+    }
+
+    /* ── Stat card (Super Admin) ─────────────────────────────── */
+    .stat-card {
+        @apply relative overflow-hidden rounded-2xl border p-5;
+        background-color: var(--bg-surface);
+        border-color: var(--border-subtle);
+        box-shadow: var(--shadow-card);
+        transition: all 0.3s var(--transition-smooth);
+    }
+    .stat-card:hover {
+        box-shadow: var(--shadow-elevated);
+        transform: translateY(-2px);
+    }
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        transform: translate(30%, -30%);
+        opacity: 0.04;
+        pointer-events: none;
+    }
+    .stat-card-blue::after { background-color: #6366F1; }
+    .stat-card-green::after { background-color: #10B981; }
+    .stat-card-red::after { background-color: #EF4444; }
+    .stat-card-amber::after { background-color: #F59E0B; }
+
+    /* ── Modal overlay ─────────────────────────────────────────── */
+    .modal-overlay {
+        @apply fixed inset-0 z-[70] flex items-center justify-center px-4;
+        background: rgba(15, 23, 42, 0.60);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    .dark .modal-overlay {
+        background: rgba(0, 0, 0, 0.70);
+    }
+
+    .modal-panel {
+        @apply w-full rounded-2xl border p-6;
+        background-color: var(--bg-surface);
+        border-color: var(--border-subtle);
+        box-shadow: var(--shadow-overlay);
+    }
+    .dark .modal-panel {
+        border-color: var(--border-muted);
+    }
+
+    /* ── Tooltip ──────────────────────────────────────────────── */
+    .tooltip {
+        @apply absolute z-50 px-3 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg
+               shadow-lg pointer-events-none dark:bg-slate-700;
     }
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
-.dark ::-webkit-scrollbar-track { background: #0f172a; }
-.dark ::-webkit-scrollbar-thumb { background: #475569; }
+/* ══════════════════════════════════════════════════════════════════
+   UTILITIES — One-off helpers
+   ══════════════════════════════════════════════════════════════════ */
 
-.card-shadow { box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 6px 18px -8px rgb(15 23 42 / 0.10); }
-.dark .card-shadow { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.20), 0 6px 18px -8px rgb(0 0 0 / 0.30); }
+/* Custom scrollbar */
+::-webkit-scrollbar         { width: 6px; height: 6px; }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-@keyframes pageFade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-.page-fade { animation: pageFade .3s ease both; }
+/* Card shadow helpers */
+.card-shadow {
+    box-shadow: var(--shadow-card);
+}
+.card-shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+}
+
+/* ── Sidebar — override with deeper navy token ─────── */
+aside.fixed {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border-subtle) !important;
+}
+
+body.tenant-custom-sidebar-bg aside.fixed {
+    background-color: var(--tenant-sidebar-bg) !important;
+    border-right-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* ── Top bar — glassmorphic ─────────────────────────── */
+header.sticky {
+    background-color: var(--bg-topbar);
+    border-bottom: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+.dark header.sticky {
+    background-color: var(--bg-topbar);
+    border-bottom-color: var(--border-subtle);
+}
+
+/* ── Footer ─────────────────────────────────────────── */
+footer {
+    background-color: var(--bg-surface);
+    border-top-color: var(--border-subtle);
+}
+.dark footer {
+    background-color: var(--bg-surface);
+    border-top-color: var(--border-subtle);
+}
+
+/* ── Main content area — canvas with subtle texture ── */
+/* Per-user / tenant --tenant-page-bg applies in both light and dark mode (set on <body> in tenant layout). */
+main.page-fade {
+    background-color: var(--tenant-page-bg, var(--bg-primary));
+    background-image:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(99, 102, 241, 0.03) 0%,
+            transparent 60%
+        ),
+        radial-gradient(
+            circle,
+            rgba(100, 116, 139, 0.04) 1px,
+            transparent 1px
+        );
+    background-size: 100% 100%, 24px 24px;
+}
+
+.dark main.page-fade {
+    background-color: var(--tenant-page-bg, var(--bg-primary));
+    background-image:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(99, 102, 241, 0.05) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            circle,
+            rgba(255, 255, 255, 0.018) 1px,
+            transparent 1px
+        );
+    background-size: 100% 100%, 24px 24px;
+}
+
+/* ── Sidebar nav active — reads plan-level tokens ───── */
+.nav-active {
+    background: linear-gradient(
+        90deg,
+        var(--tenant-nav-active-start, #6366F1) 0%,
+        var(--tenant-nav-active-end,   #8B5CF6) 100%
+    );
+    box-shadow: 0 4px 14px var(--tenant-nav-shadow, rgba(99, 102, 241, 0.28));
+}
+
+aside.fixed nav a:hover {
+    filter: brightness(1.05);
+}
+
+/* Page load fade animation */
+@keyframes pageFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+.page-fade { animation: pageFade .35s ease both; }
+
+/* Staggered animation */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+}
+.slide-up { animation: slideUp 0.5s var(--transition-smooth) both; }
+.slide-up-delay-1 { animation-delay: 0.05s; }
+.slide-up-delay-2 { animation-delay: 0.10s; }
+.slide-up-delay-3 { animation-delay: 0.15s; }
+.slide-up-delay-4 { animation-delay: 0.20s; }
+
+/* Pulse glow for live indicators */
+@keyframes pulseGlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+/* Floating animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.float-anim { animation: float 5s ease-in-out infinite; }
+
+/* Focus-visible ring for keyboard navigation */
+:focus-visible {
+    outline: 2px solid #6366F1;
+    outline-offset: 2px;
+}
+
+/* Skeleton loader pulse */
+.skeleton {
+    @apply animate-pulse rounded-xl;
+    background-color: var(--bg-secondary);
+}
+.dark .skeleton {
+    background-color: var(--bg-elevated);
+}
+
+/* ── Dropdown / popover elevation ─────────────────────── */
+.shadow-overlay {
+    box-shadow: var(--shadow-overlay);
+}
+
+/* reCAPTCHA v3 — default floating badge (when no inline disclosure) */
+.grecaptcha-badge {
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 80 !important;
+    right: 12px !important;
+    bottom: 12px !important;
+}
+
+/* Inline reCAPTCHA text + logo is shown on tenant login/register — hide floating badge (Google policy) */
+body.tenant-auth-recaptcha .grecaptcha-badge {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* ── Theme transition — smooth color changes ────────── */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+    transition: background-color 0.3s var(--transition-smooth),
+                border-color 0.3s var(--transition-smooth),
+                color 0.3s var(--transition-smooth),
+                box-shadow 0.3s var(--transition-smooth) !important;
+}
+
+/* ── Gradient text ──────────────────────────────────── */
+.text-gradient-indigo {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-cyan {
+    background: linear-gradient(135deg, #06B6D4, #22D3EE);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Icon container ─────────────────────────────────── */
+.icon-container {
+    @apply flex items-center justify-center shrink-0 rounded-xl;
+    transition: transform 0.2s var(--transition-smooth);
+}
+.icon-container-sm { @apply w-9 h-9; }
+.icon-container-md { @apply w-11 h-11; }
+.icon-container-lg { @apply w-14 h-14; }

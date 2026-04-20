@@ -42,7 +42,7 @@ class RegisteredUserController extends Controller
 
         if (app(RecaptchaService::class)->enabled()) {
             $ok = app(RecaptchaService::class)
-                ->verify($request->string('g-recaptcha-response')->toString(), $request->ip());
+                ->verifyV3($request->string('g-recaptcha-response')->toString(), 'tenant_register', $request->ip());
 
             if (! $ok) {
                 throw ValidationException::withMessages([
@@ -57,6 +57,8 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($validated['password']),
             'role' => TenantRole::Resident,
         ]);
+
+        $user->syncRbacRoleFromColumn();
 
         event(new Registered($user));
 

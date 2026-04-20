@@ -34,7 +34,7 @@
                        value="{{ old('email') }}"
                        required autofocus autocomplete="username"
                        class="w-full pl-10 pr-4 py-2.5 text-sm border rounded-xl transition
-                              {{ $errors->has('email') ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-slate-300 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100' }}"
+                              {{ $errors->has('email') ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100' }}"
                        placeholder="admin@central.example">
             </div>
             @error('email')
@@ -50,7 +50,7 @@
             <div class="flex items-center justify-between mb-1.5">
                 <label for="password" class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
                 @if (Route::has('password.request'))
-                    <a href="{{ route('password.request') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">Forgot password?</a>
+                    <a href="{{ route('password.request') }}" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Forgot password?</a>
                 @endif
             </div>
             <div class="relative" x-data="{ show: false }">
@@ -63,7 +63,7 @@
                        :type="show ? 'text' : 'password'"
                        required autocomplete="current-password"
                        class="w-full pl-10 pr-10 py-2.5 text-sm border rounded-xl transition
-                              {{ $errors->has('password') ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-slate-300 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100' }}"
+                              {{ $errors->has('password') ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100' }}"
                        placeholder="••••••••••">
                 <button type="button" @click="show = !show" tabindex="-1"
                         class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
@@ -82,17 +82,17 @@
         {{-- Remember --}}
         <div class="flex items-center">
             <input id="remember_me" name="remember" type="checkbox"
-                   class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                   class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
             <label for="remember_me" class="ml-2.5 text-sm text-slate-600 dark:text-slate-400">Keep me signed in</label>
         </div>
 
         {{-- Submit --}}
         <button type="submit"
                 class="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl
-                       bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
+                       bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 active:from-indigo-800 active:to-violet-800
                        text-white text-sm font-semibold
                        shadow-lg shadow-indigo-600/30
-                       transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                       transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-4 focus:ring-indigo-300">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
             </svg>
@@ -125,7 +125,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('login') }}" class="mt-8 space-y-5">
+    <form id="tenant-login-form" method="POST" action="{{ route('login') }}" class="mt-8 space-y-5">
         @csrf
 
         <div>
@@ -138,7 +138,7 @@
                 </div>
                 <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username"
                        class="w-full pl-10 pr-4 py-2.5 text-sm border rounded-xl transition dark:bg-slate-800 dark:text-slate-100
-                              {{ $errors->has('email') ? 'border-red-400 bg-red-50 dark:bg-red-900/30' : 'border-slate-300 dark:border-slate-600 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900' }}">
+                              {{ $errors->has('email') ? 'border-red-400 bg-red-50 dark:bg-red-900/30' : 'border-slate-300 dark:border-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900' }}">
             </div>
             @error('email')<p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>@enderror
         </div>
@@ -146,7 +146,7 @@
         <div>
             <div class="flex items-center justify-between mb-1.5">
                 <label for="password" class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
-                <a href="{{ route('password.request') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">Forgot password?</a>
+                <a href="{{ route('password.request') }}" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Forgot password?</a>
             </div>
             <div class="relative" x-data="{ show: false }">
                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -156,7 +156,7 @@
                 </div>
                 <input id="password" name="password" :type="show ? 'text' : 'password'" required autocomplete="current-password"
                        class="w-full pl-10 pr-10 py-2.5 text-sm border rounded-xl transition dark:bg-slate-800 dark:text-slate-100
-                              {{ $errors->has('password') ? 'border-red-400 bg-red-50 dark:bg-red-900/30' : 'border-slate-300 dark:border-slate-600 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900' }}">
+                              {{ $errors->has('password') ? 'border-red-400 bg-red-50 dark:bg-red-900/30' : 'border-slate-300 dark:border-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900' }}">
                 <button type="button" @click="show = !show" tabindex="-1" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                     <svg x-show="!show" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <svg x-show="show" style="width:16px;height:16px;display:none" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
@@ -166,13 +166,13 @@
         </div>
 
         <div class="flex items-center">
-            <input id="remember_me" name="remember" type="checkbox" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+            <input id="remember_me" name="remember" type="checkbox" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
             <label for="remember_me" class="ml-2.5 text-sm text-slate-600 dark:text-slate-400">Keep me signed in</label>
         </div>
 
         @if($recaptchaEnabled)
             <div>
-                <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
+                <input type="hidden" name="g-recaptcha-response" id="tenant-login-recaptcha-token">
                 @error('g-recaptcha-response')
                     <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
                 @enderror
@@ -186,22 +186,9 @@
             Sign in to portal
         </button>
 
-        <div class="relative py-1">
-            <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
-            </div>
-            <div class="relative flex justify-center">
-                <span class="bg-white dark:bg-slate-950 px-2 text-xs text-slate-400 dark:text-slate-500">or continue with</span>
-            </div>
-        </div>
-
-        <a href="{{ route('tenant.google.redirect') }}"
-           class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-1.4 3.6-5.5 3.6-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.2.8 4 1.5l2.8-2.7C17.1 2.5 14.8 1.5 12 1.5 6.8 1.5 2.6 5.8 2.6 11s4.2 9.5 9.4 9.5c5.4 0 9-3.8 9-9.1 0-.6-.1-1-.1-1.2H12z"/>
-            </svg>
-            Continue with Google
-        </a>
+        @if($recaptchaEnabled)
+            <x-recaptcha-disclosure class="mt-2" />
+        @endif
     </form>
 
     <p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -213,11 +200,53 @@
         This portal uses your barangay subscription plan for features and limits.
     </p>
 
+    {{-- @push must be inside the layout slot so it runs before tenant-guest @stack('scripts'); pushes after </x-tenant-guest-layout> are too late and never render. --}}
+    @if($recaptchaEnabled)
+        @push('scripts')
+            <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}" async defer></script>
+            <script>
+                (function () {
+                    const form = document.getElementById('tenant-login-form');
+                    const tokenInput = document.getElementById('tenant-login-recaptcha-token');
+                    const siteKey = @json(config('services.recaptcha.site_key'));
+                    if (!form || !tokenInput) return;
+
+                    form.addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        tokenInput.value = '';
+
+                        function obtainTokenAndPost() {
+                            grecaptcha.ready(function () {
+                                grecaptcha.execute(siteKey, { action: 'tenant_login' })
+                                    .then(function (token) {
+                                        tokenInput.value = token;
+                                        form.submit();
+                                    })
+                                    .catch(function () {
+                                        alert('Could not verify reCAPTCHA. Check your connection, refresh the page, and try again.');
+                                    });
+                            });
+                        }
+
+                        function waitForApi(remaining) {
+                            if (window.grecaptcha && typeof grecaptcha.ready === 'function') {
+                                obtainTokenAndPost();
+                                return;
+                            }
+                            if (remaining <= 0) {
+                                alert('reCAPTCHA is still loading. Please wait a few seconds and click Sign in again.');
+                                return;
+                            }
+                            setTimeout(function () { waitForApi(remaining - 1); }, 100);
+                        }
+
+                        waitForApi(120);
+                    });
+                })();
+            </script>
+        @endpush
+    @endif
+
 </x-tenant-guest-layout>
 
-@if($recaptchaEnabled)
-    @push('scripts')
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    @endpush
-@endif
 @endif

@@ -1,4 +1,3 @@
-@php $tb = \App\Support\TenantAppearance::theme()['button']; @endphp
 <x-tenant-layout title="New reservation" breadcrumb="New reservation">
 
     <div class="px-6 py-8 sm:px-10 max-w-xl">
@@ -18,11 +17,11 @@
             @enderror
 
             <div>
-                <label class="t-label" for="facility_id">Facility</label>
+                <label class="t-label" for="facility_id">Facility or equipment</label>
                 <select id="facility_id" name="facility_id" class="t-input" required>
-                    <option value="">Select a facility…</option>
+                    <option value="">Select a listing…</option>
                     @foreach($facilities as $f)
-                        <option value="{{ $f->id }}" @selected(old('facility_id') == $f->id)>{{ $f->name }}</option>
+                        <option value="{{ $f->id }}" @selected((string) old('facility_id', $preselectFacilityId) === (string) $f->id)>{{ $f->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -38,13 +37,29 @@
                 <label class="t-label" for="purpose">Purpose</label>
                 <textarea id="purpose" name="purpose" rows="3" class="t-textarea" placeholder="Briefly describe the purpose of this reservation…">{{ old('purpose') }}</textarea>
             </div>
+            @if($supportsIntegratedPayments)
+                <div>
+                    <label class="t-label" for="payment_option">Preferred payment method</label>
+                    <select id="payment_option" name="payment_option" class="t-input">
+                        <option value="">Select payment method (optional)</option>
+                        @foreach(['cash', 'gcash', 'paymaya', 'bank_transfer', 'stripe', 'paypal'] as $option)
+                            <option value="{{ $option }}" @selected(old('payment_option') === $option)>
+                                {{ str($option)->replace('_', ' ')->title() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Premium feature: this helps the barangay prepare integrated payment handling.
+                    </p>
+                </div>
+            @endif
             <label class="flex items-center gap-2.5 cursor-pointer select-none">
                 <input type="checkbox" name="is_special_request" value="1"
                        @checked(old('is_special_request'))
-                       class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:bg-slate-800" />
-                <span class="text-sm text-slate-700 dark:text-slate-300">Special request (requires Captain approval)</span>
+                       class="t-checkbox-accent rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800" />
+                <span class="text-sm text-slate-700 dark:text-slate-300">Special request (requires tenant management approval)</span>
             </label>
-            <button type="submit" class="w-full py-3 rounded-xl text-white text-sm font-semibold shadow-sm transition {{ $tb }}">
+            <button type="submit" class="t-btn-primary w-full justify-center py-3 shadow-sm">
                 Submit request
             </button>
         </form>

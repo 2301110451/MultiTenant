@@ -49,7 +49,7 @@ class LoginRequest extends FormRequest
 
         $validator->after(function ($validator): void {
             $ok = app(RecaptchaService::class)
-                ->verify($this->string('g-recaptcha-response')->toString(), $this->ip());
+                ->verifyV3($this->string('g-recaptcha-response')->toString(), 'tenant_login', $this->ip());
 
             if (! $ok) {
                 $validator->errors()->add('g-recaptcha-response', 'Captcha verification failed. Please try again.');
@@ -74,6 +74,18 @@ class LoginRequest extends FormRequest
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
+        }
+
+        if ($guard === 'tenant') {
+            $tenantUser = Auth::guard('tenant')->user();
+            if ($tenantUser && ! $tenantUser->is_active) {
+                Auth::guard('tenant')->logout();
+                RateLimiter::hit($this->throttleKey($guard));
+
+                throw ValidationException::withMessages([
+                    'email' => 'This account is inactive. Please contact your Tenant Admin.',
+                ]);
+            }
         }
 
         RateLimiter::clear($this->throttleKey($guard));

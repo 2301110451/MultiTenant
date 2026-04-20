@@ -1,13 +1,31 @@
 <x-central-layout title="Subscription requests" breadcrumb="Subscription requests">
 
-    <div class="px-6 py-8 sm:px-10 space-y-6 page-fade">
+    <div
+        class="px-6 py-8 sm:px-10 space-y-6 page-fade"
+        data-live-endpoint="{{ route('central.realtime.subscription-intents') }}"
+        data-live-interval="12000"
+        x-data="{
+            showReviewModal: false,
+            reviewAction: '',
+            reviewType: '',
+            reviewTenant: '',
+            openReviewModal(action, type, tenant) {
+                this.reviewAction = action;
+                this.reviewType = type;
+                this.reviewTenant = tenant;
+                this.showReviewModal = true;
+            }
+        }"
+    >
 
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Subscription requests</h1>
                 <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                     Unsubscribe and extension submissions from suspended barangay portals.
-                    <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ $pendingCount }} pending</span>
+                    <span class="font-medium text-indigo-600 dark:text-indigo-400"><span data-live-key="pendingCount">{{ $pendingCount }}</span> pending</span>
+                    <span class="ml-2">Approved: <strong data-live-key="approvedCount">{{ $intents->getCollection()->where('status', 'approved')->count() }}</strong></span>
+                    <span class="ml-2">Rejected: <strong data-live-key="rejectedCount">{{ $intents->getCollection()->where('status', 'rejected')->count() }}</strong></span>
                 </p>
             </div>
         </div>
@@ -83,18 +101,20 @@
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     @if ($row->isPending())
                                         <div class="flex flex-col items-end gap-2 sm:flex-row sm:justify-end">
-                                            <form method="post" action="{{ route('central.subscription-intents.approve', $row) }}" class="inline">
-                                                @csrf
-                                                <button type="submit" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white transition">
-                                                    Approve
-                                                </button>
-                                            </form>
-                                            <form method="post" action="{{ route('central.subscription-intents.reject', $row) }}" class="inline" onsubmit="return confirm('Reject this request?');">
-                                                @csrf
-                                                <button type="submit" class="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                                                    Reject
-                                                </button>
-                                            </form>
+                                            <button
+                                                type="button"
+                                                @click="openReviewModal('{{ route('central.subscription-intents.approve', $row) }}', 'approve', @js($row->tenant?->name ?? 'This barangay'))"
+                                                class="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white transition"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click="openReviewModal('{{ route('central.subscription-intents.reject', $row) }}', 'reject', @js($row->tenant?->name ?? 'This barangay'))"
+                                                class="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                                            >
+                                                Reject
+                                            </button>
                                         </div>
                                     @else
                                         <span class="text-slate-400 dark:text-slate-500">—</span>
@@ -119,8 +139,39 @@
 
         <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
             <strong class="text-slate-800 dark:text-slate-200">Approve:</strong> extension requests reactivate a suspended portal and email officers (when SMTP is configured).
-            Unsubscribe approvals only mark the request as accepted; remove the tenant from Barangays if you are closing the account.
+            Unsubscribe approvals now mark the tenant as <strong>unsubscribed</strong> and automatically block all tenant logins on that portal.
             <strong class="text-slate-800 dark:text-slate-200 ml-2">Reject:</strong> leaves the portal as-is (usually still suspended).
+        </div>
+
+        <div
+            x-show="showReviewModal"
+            x-transition.opacity
+            class="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center px-4"
+            style="display:none"
+            @keydown.escape.window="showReviewModal = false"
+            @click.self="showReviewModal = false"
+        >
+            <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl p-6">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 capitalize" x-text="reviewType === 'approve' ? 'Approve request?' : 'Reject request?'"></h3>
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    You are about to
+                    <span class="font-semibold capitalize" x-text="reviewType"></span>
+                    the subscription request for
+                    <span class="font-semibold" x-text="reviewTenant"></span>.
+                </p>
+                <form :action="reviewAction" method="POST" class="mt-5 flex justify-end gap-2">
+                    @csrf
+                    <button type="button" @click="showReviewModal = false" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700">
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                        :class="reviewType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'"
+                        x-text="reviewType === 'approve' ? 'Approve' : 'Reject'"
+                    ></button>
+                </form>
+            </div>
         </div>
     </div>
 </x-central-layout>

@@ -2,14 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Enums\FacilityKind;
 use App\Enums\TenantRole;
 use App\Models\Equipment;
 use App\Models\Facility;
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantProvisioningService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+
 class BarangayDemoSeeder extends Seeder
 {
     public function run(): void
@@ -17,8 +20,8 @@ class BarangayDemoSeeder extends Seeder
         /** @var TenantProvisioningService $provisioning */
         $provisioning = app(TenantProvisioningService::class);
 
-        $planPremium = \App\Models\Plan::query()->where('slug', 'premium')->first();
-        $planStandard = \App\Models\Plan::query()->where('slug', 'standard')->first();
+        $planPremium = Plan::query()->where('slug', 'premium')->first();
+        $planStandard = Plan::query()->where('slug', 'standard')->first();
 
         $carmen = $this->ensureTenant(
             $provisioning,
@@ -61,9 +64,9 @@ class BarangayDemoSeeder extends Seeder
         }
 
         $users = [
-            ['name' => 'Maria Santos', 'email' => 'secretary@'.$slug.'.test', 'role' => TenantRole::Secretary],
-            ['name' => 'Pedro Reyes', 'email' => 'captain@'.$slug.'.test', 'role' => TenantRole::Captain],
-            ['name' => 'Ana Cruz', 'email' => 'custodian@'.$slug.'.test', 'role' => TenantRole::Custodian],
+            ['name' => 'Maria Santos', 'email' => 'admin@'.$slug.'.test', 'role' => TenantRole::TenantAdmin],
+            ['name' => 'Pedro Reyes', 'email' => 'staff@'.$slug.'.test', 'role' => TenantRole::Staff],
+            ['name' => 'Ana Cruz', 'email' => 'viewer@'.$slug.'.test', 'role' => TenantRole::Viewer],
             ['name' => 'Juan Dela Cruz', 'email' => 'resident@'.$slug.'.test', 'role' => TenantRole::Resident],
         ];
 
@@ -86,6 +89,7 @@ class BarangayDemoSeeder extends Seeder
         foreach ($facilities as $f) {
             Facility::query()->create([
                 'name' => $f['name'],
+                'kind' => FacilityKind::Facility,
                 'description' => 'Managed facility for community use.',
                 'capacity' => $f['capacity'],
                 'rules' => $f['rules'],
@@ -101,6 +105,24 @@ class BarangayDemoSeeder extends Seeder
                 'is_active' => true,
             ]);
         }
+
+        Facility::query()->create([
+            'name' => 'Portable sound package',
+            'kind' => FacilityKind::Equipment,
+            'description' => 'PA + 2 microphones — reserve by time slot like a facility.',
+            'capacity' => 1,
+            'rules' => 'Return complete set; report damage immediately.',
+            'operating_hours' => [
+                'mon' => '08:00-17:00',
+                'tue' => '08:00-17:00',
+                'wed' => '08:00-17:00',
+                'thu' => '08:00-17:00',
+                'fri' => '08:00-17:00',
+                'sat' => '08:00-12:00',
+            ],
+            'hourly_rate' => 350,
+            'is_active' => true,
+        ]);
 
         $equipment = [
             ['name' => 'Sound system', 'description' => 'Portable PA', 'quantity_total' => 3, 'quantity_available' => 3, 'penalty_per_day' => 150],

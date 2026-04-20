@@ -40,13 +40,21 @@ class TenantApplicationReviewController extends Controller
             return back()->with('warning', 'This application was already reviewed.');
         }
 
+        $tenantAdminEmail = $application->tenant_admin_email;
+        $staffEmail = $application->staff_email;
+
         try {
-            $secretaryPassword = Crypt::decryptString($application->secretary_password_encrypted);
-            $captainPassword = Crypt::decryptString($application->captain_password_encrypted);
+            $tenantAdminPassword = Crypt::decryptString(
+                $application->tenant_admin_password_encrypted
+            );
+            $staffPassword = null;
+            if (! empty($application->staff_password_encrypted)) {
+                $staffPassword = Crypt::decryptString($application->staff_password_encrypted);
+            }
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->with('warning', 'Could not decrypt stored officer passwords for this application.');
+            return back()->with('warning', 'Could not decrypt stored tenant account passwords for this application.');
         }
 
         $tenant = null;
@@ -56,10 +64,10 @@ class TenantApplicationReviewController extends Controller
                 $application->barangay_name,
                 $domain,
                 $application->plan_id,
-                $application->secretary_email,
-                $secretaryPassword,
-                $application->captain_email,
-                $captainPassword,
+                $tenantAdminEmail,
+                $tenantAdminPassword,
+                $staffEmail,
+                $staffPassword,
             );
         } catch (\Throwable $e) {
             report($e);
@@ -73,8 +81,8 @@ class TenantApplicationReviewController extends Controller
                 'reviewed_at' => now(),
                 'reviewed_by' => $request->user()->id,
                 'provisioned_tenant_id' => $tenant->id,
-                'secretary_password_encrypted' => '',
-                'captain_password_encrypted' => '',
+                'tenant_admin_password_encrypted' => '',
+                'staff_password_encrypted' => '',
             ]);
         });
 
@@ -85,7 +93,7 @@ class TenantApplicationReviewController extends Controller
                 $this->officerNotifier->notifyApproval(
                     $application->barangay_name,
                     $domain,
-                    [$application->secretary_email, $application->captain_email],
+                    array_values(array_filter([$tenantAdminEmail, $staffEmail])),
                 );
             } catch (\Throwable $e) {
                 report($e);
@@ -109,7 +117,7 @@ class TenantApplicationReviewController extends Controller
                 ->with('warning', $mailNotice);
         }
 
-        return $redirect->with('success', 'Application approved and tenant provisioned. Approval email was sent to Secretary and Captain addresses.');
+        return $redirect->with('success', 'Application approved and tenant provisioned. Approval email was sent to Tenant Admin/Staff addresses.');
     }
 
     public function reject(Request $request, TenantApplication $application): RedirectResponse
@@ -127,8 +135,8 @@ class TenantApplicationReviewController extends Controller
             'reviewed_at' => now(),
             'reviewed_by' => $request->user()->id,
             'rejection_reason' => $data['rejection_reason'] ?? null,
-            'secretary_password_encrypted' => '',
-            'captain_password_encrypted' => '',
+            'tenant_admin_password_encrypted' => '',
+            'staff_password_encrypted' => '',
         ]);
 
         $portalHint = strtolower($application->barangay_name);
@@ -137,8 +145,8 @@ class TenantApplicationReviewController extends Controller
         $portalHint = $portalHint.'.'.config('tenancy.tenant_domain_suffix', 'localhost');
 
         $recipients = array_values(array_unique([
-            strtolower($application->secretary_email),
-            strtolower($application->captain_email),
+            strtolower((string) $application->tenant_admin_email),
+            strtolower((string) $application->staff_email),
         ]));
 
         $mailWarning = null;
@@ -171,6 +179,6 @@ class TenantApplicationReviewController extends Controller
                 ->with('warning', $mailNotice);
         }
 
-        return $redirect->with('success', 'Application rejected. Rejection email was sent to Secretary and Captain addresses.');
+        return $redirect->with('success', 'Application rejected. Rejection email was sent to Tenant Admin and Staff addresses.');
     }
 }

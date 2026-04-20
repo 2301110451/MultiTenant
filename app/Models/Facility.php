@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FacilityKind;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -11,6 +12,8 @@ class Facility extends Model
 
     protected $fillable = [
         'name',
+        'kind',
+        'image_path',
         'description',
         'capacity',
         'rules',
@@ -22,6 +25,7 @@ class Facility extends Model
     protected function casts(): array
     {
         return [
+            'kind' => FacilityKind::class,
             'operating_hours' => 'array',
             'is_active' => 'boolean',
             'hourly_rate' => 'decimal:2',

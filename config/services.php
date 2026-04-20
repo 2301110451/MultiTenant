@@ -36,15 +36,24 @@ return [
     ],
 
     'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'client_id' => trim((string) env('GOOGLE_CLIENT_ID', '')),
+        'client_secret' => trim((string) env('GOOGLE_CLIENT_SECRET', '')),
+        // Empty = TenantGoogleAuthController builds loopback http://127.0.0.1:PORT/auth/google/callback for *.localhost.
+        // Set GOOGLE_REDIRECT_URI to match Google Cloud exactly if you need a fixed URI (must match Console).
+        'redirect' => trim((string) env('GOOGLE_REDIRECT_URI', '')),
+        // Optional: when port cannot be detected, use this (e.g. 8080). Usually leave unset; local defaults to 8000.
+        'loopback_port' => (int) env('GOOGLE_OAUTH_LOOPBACK_PORT', 0),
     ],
 
     'recaptcha' => [
         'enabled' => (bool) env('RECAPTCHA_ENABLED', false),
+        'version' => env('RECAPTCHA_VERSION', 'v3'),
         'site_key' => env('RECAPTCHA_SITE_KEY'),
         'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        'min_score' => (float) env('RECAPTCHA_MIN_SCORE', 0.5),
+        // TLS to https://www.google.com/recaptcha/api/siteverify — Windows cURL error 60: use RECAPTCHA_CAINFO (curl.se ca bundle) or local-only RECAPTCHA_HTTP_SSL_VERIFY=false
+        'ca_bundle' => env('RECAPTCHA_CAINFO', ''),
+        'http_ssl_verify' => filter_var(env('RECAPTCHA_HTTP_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
     ],
 
     /*

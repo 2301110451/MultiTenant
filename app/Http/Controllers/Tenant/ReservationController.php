@@ -6,12 +6,16 @@ use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Mail\ReservationApprovedMail;
 use App\Models\Facility;
+use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\User;
 use App\Services\ReservationService;
+use App\Support\Pricing;
 use App\Support\Tenancy;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -23,6 +27,8 @@ class ReservationController extends Controller
 
     public function index(Request $request): View
     {
+        Gate::forUser($request->user('tenant'))->authorize('viewAny', Reservation::class);
+
         $query = Reservation::query()->with(['facility', 'user'])->latest();
 
         if ($request->user('tenant')->isResident()) {
@@ -34,15 +40,32 @@ class ReservationController extends Controller
         return view('tenant.reservations.index', compact('reservations'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        Gate::forUser($request->user('tenant'))->authorize('create', Reservation::class);
+
+        $tenant = Tenancy::currentTenant();
+        $plan = $tenant?->subscription?->plan ?? $tenant?->plan;
+        $supportsIntegratedPayments = $plan && Pricing::allows('integrated_payments', $plan);
+
         $facilities = Facility::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('tenant.reservations.create', compact('facilities'));
+        $preselectFacilityId = null;
+        $rawPre = $request->query('facility_id');
+        if ($rawPre !== null && $rawPre !== '') {
+            $candidate = (int) $rawPre;
+            if ($candidate > 0 && $facilities->firstWhere('id', $candidate)) {
+                $preselectFacilityId = $candidate;
+            }
+        }
+
+        return view('tenant.reservations.create', compact('facilities', 'preselectFacilityId', 'supportsIntegratedPayments'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        Gate::forUser($request->user('tenant'))->authorize('create', Reservation::class);
+
         $tenant = Tenancy::currentTenant();
         if ($tenant) {
             $this->reservations->assertWithinPlanLimits($tenant);
@@ -54,6 +77,7 @@ class ReservationController extends Controller
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'purpose' => ['nullable', 'string', 'max:2000'],
+            'payment_option' => ['nullable', 'string', 'in:cash,gcash,paymaya,bank_transfer,stripe,paypal'],
             'is_special_request' => ['boolean'],
         ]);
 
@@ -68,6 +92,10 @@ class ReservationController extends Controller
 
         $qr = $this->reservations->generateQrTokenIfPremium();
 
+        $plan = $tenant?->subscription?->plan ?? $tenant?->plan;
+        $supportsIntegratedPayments = $plan && Pricing::allows('integrated_payments', $plan);
+        $paymentOption = $supportsIntegratedPayments ? ($data['payment_option'] ?? null) : null;
+
         Reservation::query()->create([
             'user_id' => $request->user('tenant')->id,
             'facility_id' => $data['facility_id'],
@@ -75,6 +103,7 @@ class ReservationController extends Controller
             'ends_at' => $endsAt,
             'status' => ReservationStatus::Pending,
             'purpose' => $data['purpose'] ?? null,
+            'payment_option' => $paymentOption,
             'is_special_request' => (bool) ($data['is_special_request'] ?? false),
             'qr_token' => $qr,
         ]);
@@ -82,14 +111,11 @@ class ReservationController extends Controller
         return redirect()->route('tenant.reservations.index')->with('status', 'reservation-created');
     }
 
-    public function show(Reservation $reservation): View
+    public function show(Request $request, Reservation $reservation): View
     {
-        $user = auth('tenant')->user();
-        if ($user?->isResident() && (int) $reservation->user_id !== (int) $user->id) {
-            abort(403);
-        }
+        Gate::forUser($request->user('tenant'))->authorize('view', $reservation);
 
-        $reservation->load(['facility', 'user', 'equipment']);
+        $reservation->load(['facility', 'user', 'equipment', 'payments']);
 
         return view('tenant.reservations.show', compact('reservation'));
     }
@@ -97,8 +123,7 @@ class ReservationController extends Controller
     public function update(Request $request, Reservation $reservation): RedirectResponse
     {
         $user = $request->user('tenant');
-
-        abort_unless($user && ($user->isSecretary() || $user->isCaptain()), 403);
+        Gate::forUser($user)->authorize('update', $reservation);
 
         $data = $request->validate([
             'status' => ['required', 'in:pending,approved,rejected,completed'],
@@ -110,6 +135,9 @@ class ReservationController extends Controller
         }
 
         $reservation->status = ReservationStatus::from($data['status']);
+        if ($reservation->status === ReservationStatus::Completed) {
+            $reservation->revenue_amount = $this->calculateReservationRevenue($reservation);
+        }
         $reservation->save();
 
         // Notify resident when an officer approves a reservation.
@@ -126,15 +154,17 @@ class ReservationController extends Controller
     public function destroy(Request $request, Reservation $reservation): RedirectResponse
     {
         $user = $request->user('tenant');
-        abort_unless($user && ($user->isSecretary() || $user->isCaptain()), 403);
+        Gate::forUser($user)->authorize('delete', $reservation);
 
         $reservation->delete();
 
         return redirect()->route('tenant.reservations.index')->with('status', 'reservation-deleted');
     }
 
-    public function calendar(): View
+    public function calendar(Request $request): View
     {
+        Gate::forUser($request->user('tenant'))->authorize('viewAny', Reservation::class);
+
         $events = Reservation::query()
             ->with('facility')
             ->whereIn('status', ['pending', 'approved'])
@@ -149,5 +179,161 @@ class ReservationController extends Controller
         return view('tenant.reservations.calendar', [
             'events' => $events,
         ]);
+    }
+
+    public function markReturned(Request $request, Reservation $reservation): RedirectResponse
+    {
+        $user = $request->user('tenant');
+        abort_unless(
+            $user && $user->isResident() && $user->hasPermission('reservations.update') && (int) $reservation->user_id === (int) $user->id,
+            403
+        );
+
+        if (! in_array($reservation->status->value, ['approved', 'completed'], true)) {
+            return redirect()
+                ->route('tenant.reservations.show', $reservation)
+                ->with('status', 'Only approved reservations can be marked as returned.');
+        }
+
+        if (! $reservation->checked_out_at) {
+            $reservation->checked_out_at = now();
+        }
+
+        if ($reservation->status->value === 'approved') {
+            $reservation->status = ReservationStatus::Completed;
+        }
+        if ($reservation->status === ReservationStatus::Completed) {
+            $reservation->revenue_amount = $this->calculateReservationRevenue($reservation);
+        }
+        $reservation->save();
+
+        $reservation->loadMissing(['facility', 'user']);
+        $this->notifyTenantOfficers(
+            $reservation,
+            'Equipment/facility returned',
+            "Resident {$reservation->user->name} marked reservation #{$reservation->id} ({$reservation->facility->name}) as returned."
+        );
+
+        return redirect()
+            ->route('tenant.reservations.show', $reservation)
+            ->with('status', 'Marked as returned. Tenant officers were notified.');
+    }
+
+    public function markDamage(Request $request, Reservation $reservation): RedirectResponse
+    {
+        $user = $request->user('tenant');
+        abort_unless($user && $user->hasPermission('reservations.update'), 403);
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $payment = Payment::query()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => $data['amount'],
+            'method' => 'damage',
+            'external_ref' => $data['description'] ?? null,
+            'status' => 'pending',
+        ]);
+
+        if (! $reservation->checked_out_at) {
+            $reservation->checked_out_at = now();
+        }
+        if ($reservation->status->value === 'approved') {
+            $reservation->status = ReservationStatus::Completed;
+        }
+        if ($reservation->status === ReservationStatus::Completed) {
+            $reservation->revenue_amount = $this->calculateReservationRevenue($reservation);
+        }
+        $reservation->save();
+
+        $reservation->loadMissing(['facility', 'user']);
+        if ($reservation->user?->email) {
+            try {
+                Mail::raw(
+                    "A damage charge was added to your reservation #{$reservation->id} ({$reservation->facility->name}). "
+                    .'Amount due: PHP '.number_format((float) $payment->amount, 2).'. '
+                    .'Please open your reservation and mark as paid after payment.',
+                    fn ($message) => $message
+                        ->to($reservation->user->email)
+                        ->subject('Damage charge added to your reservation')
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return redirect()
+            ->route('tenant.reservations.show', $reservation)
+            ->with('status', 'Damage amount saved. The renter was notified.');
+    }
+
+    public function markPaymentPaid(Request $request, Reservation $reservation, Payment $payment): RedirectResponse
+    {
+        $user = $request->user('tenant');
+        abort_unless($user, 403);
+
+        $isOwnerResident = $user->isResident() && (int) $reservation->user_id === (int) $user->id;
+        $isTenantManager = $user->canManageTenant() && $user->hasPermission('reservations.update');
+        abort_unless($isOwnerResident || $isTenantManager, 403);
+        abort_unless((int) $payment->reservation_id === (int) $reservation->id, 404);
+
+        if ($payment->status === 'paid') {
+            return redirect()
+                ->route('tenant.reservations.show', $reservation)
+                ->with('status', 'This payment is already marked as paid.');
+        }
+
+        $payment->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $reservation->loadMissing(['facility', 'user']);
+        $this->notifyTenantOfficers(
+            $reservation,
+            'Damage payment marked as paid',
+            "Resident {$reservation->user->name} marked a payment as paid for reservation #{$reservation->id} ({$reservation->facility->name}). "
+            .'Amount: PHP '.number_format((float) $payment->amount, 2).'.'
+        );
+
+        return redirect()
+            ->route('tenant.reservations.show', $reservation)
+            ->with('status', 'Payment marked as paid. Tenant officers were notified.');
+    }
+
+    private function notifyTenantOfficers(Reservation $reservation, string $subject, string $body): void
+    {
+        try {
+            $emails = User::query()
+                ->whereIn('role', ['tenant_admin', 'staff'])
+                ->pluck('email')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            foreach ($emails as $email) {
+                Mail::raw($body, fn ($message) => $message->to($email)->subject($subject));
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function calculateReservationRevenue(Reservation $reservation): float
+    {
+        $reservation->loadMissing('facility');
+
+        $minutes = max(0, (int) $reservation->starts_at?->diffInMinutes($reservation->ends_at ?? $reservation->starts_at));
+        if ($minutes === 0) {
+            return 0.0;
+        }
+
+        $hours = $minutes / 60;
+        $rate = (float) ($reservation->facility?->hourly_rate ?? 0);
+
+        return round($hours * $rate, 2);
     }
 }

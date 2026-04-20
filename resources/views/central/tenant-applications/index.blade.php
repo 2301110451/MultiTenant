@@ -24,8 +24,8 @@
                         <tr class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                             <th class="px-4 py-3">Submitted</th>
                             <th class="px-4 py-3">Barangay</th>
-                            <th class="px-4 py-3">Secretary</th>
-                            <th class="px-4 py-3">Captain</th>
+                            <th class="px-4 py-3">Tenant Admin</th>
+                            <th class="px-4 py-3">Staff</th>
                             <th class="px-4 py-3">Plan</th>
                             <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3 text-right">Actions</th>
@@ -41,8 +41,8 @@
                                         <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ \Illuminate\Support\Str::limit($row->notes, 70) }}</div>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 break-all max-w-[240px]">{{ $row->secretary_email }}</td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 break-all max-w-[240px]">{{ $row->captain_email }}</td>
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 break-all max-w-[240px]">{{ $row->tenant_admin_email }}</td>
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 break-all max-w-[240px]">{{ $row->staff_email ?? '—' }}</td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $row->plan?->name ?? 'No plan (Free)' }}</td>
                                 <td class="px-4 py-3">
                                     @if($row->status === 'pending')

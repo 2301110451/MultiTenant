@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class TenantController extends Controller
@@ -22,11 +23,30 @@ class TenantController extends Controller
         private BarangayOfficerNotifier $officerNotifier,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $tenants = Tenant::query()->with(['domains', 'plan', 'subscription.plan'])->latest()->paginate(15);
+        $plans = Plan::query()->orderBy('name')->get();
 
-        return view('central.tenants.index', compact('tenants'));
+        $editTenantId = (int) ($request->query('edit') ?? old('edit_tenant_id', 0));
+        $editTenantPayload = null;
+        if ($editTenantId > 0) {
+            $t = Tenant::query()->with(['domains', 'plan'])->find($editTenantId);
+            if ($t) {
+                $planOld = old('plan_id', $t->plan_id);
+                $planForForm = ($planOld === '' || $planOld === null) ? '' : (int) $planOld;
+
+                $editTenantPayload = [
+                    'id' => $t->id,
+                    'name' => (string) old('name', $t->name),
+                    'domain' => (string) old('domain', $t->domains->first()?->domain ?? ''),
+                    'plan_id' => $planForForm,
+                    'status' => (string) old('status', $t->status ?? 'active'),
+                ];
+            }
+        }
+
+        return view('central.tenants.index', compact('tenants', 'plans', 'editTenantPayload'));
     }
 
     public function create(): View
@@ -41,10 +61,10 @@ class TenantController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'plan_id' => ['nullable', 'exists:plans,id'],
-            'secretary_email' => ['required', 'email', 'max:255', 'different:captain_email'],
-            'secretary_password' => ['required', 'string', 'confirmed', Password::defaults()],
-            'captain_email' => ['required', 'email', 'max:255', 'different:secretary_email'],
-            'captain_password' => ['required', 'string', 'confirmed', Password::defaults()],
+            'tenant_admin_email' => ['required', 'email', 'max:255', 'different:staff_email'],
+            'tenant_admin_password' => ['required', 'string', 'confirmed', Password::defaults()],
+            'staff_email' => ['nullable', 'email', 'max:255', 'different:tenant_admin_email'],
+            'staff_password' => ['nullable', 'required_with:staff_email', 'string', 'confirmed', Password::defaults()],
         ]);
 
         $domain = $this->provisioning->generateUniqueTenantDomain($data['name']);
@@ -54,10 +74,10 @@ class TenantController extends Controller
                 $data['name'],
                 $domain,
                 $data['plan_id'] ?? null,
-                $data['secretary_email'],
-                $data['secretary_password'],
-                $data['captain_email'],
-                $data['captain_password'],
+                $data['tenant_admin_email'],
+                $data['tenant_admin_password'],
+                $data['staff_email'] ?? null,
+                $data['staff_password'] ?? null,
             );
         } catch (\Throwable $e) {
             report($e);
@@ -74,7 +94,7 @@ class TenantController extends Controller
             $this->officerNotifier->notifyApproval(
                 $data['name'],
                 $domain,
-                [$data['secretary_email'], $data['captain_email']]
+                array_values(array_filter([$data['tenant_admin_email'], $data['staff_email'] ?? null]))
             );
             $mailNotice = BarangayOfficerNotifier::mailNotDeliveredToInboxNotice();
         } catch (\Throwable $e) {
@@ -83,7 +103,7 @@ class TenantController extends Controller
         }
 
         $redirect = redirect()->route('central.tenants.index')
-            ->with('success', 'Barangay tenant provisioned with Secretary and Punong Barangay accounts. Domain `'.$domain.'` is ready.')
+            ->with('success', 'Barangay tenant provisioned with Tenant Admin account. Domain `'.$domain.'` is ready.')
             ->with('portal_url', $portalUrl);
 
         if ($mailNotice !== null) {
@@ -106,17 +126,35 @@ class TenantController extends Controller
         $previousStatus = $tenant->status;
         $domain = $tenant->domains()->first();
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'in:active,suspended'],
-            'plan_id' => ['nullable', 'exists:plans,id'],
-            'domain' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('domains', 'domain')->ignore($domain?->id),
-            ],
-        ]);
+        try {
+            $data = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'status' => ['required', 'in:active,suspended,unsubscribed'],
+                'plan_id' => ['nullable', 'exists:plans,id'],
+                'domain' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('domains', 'domain')->ignore($domain?->id),
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            $query = ['edit' => $tenant->id];
+            $page = $request->input('page') ?? $request->query('page');
+            if ($page !== null && $page !== '') {
+                $query['page'] = $page;
+            }
+
+            if ($request->input('redirect_to') === 'dashboard') {
+                return redirect()->route('dashboard', $query)
+                    ->withErrors($e->validator)
+                    ->withInput();
+            }
+
+            return redirect()->route('central.tenants.index', $query)
+                ->withErrors($e->validator)
+                ->withInput();
+        }
 
         $tenant->update([
             'name' => $data['name'],
@@ -156,7 +194,11 @@ class TenantController extends Controller
             }
         }
 
-        $redirect = redirect()->route('central.tenants.index')->with('status', 'tenant-updated');
+        if ($request->input('redirect_to') === 'dashboard') {
+            $redirect = redirect()->route('dashboard')->with('status', 'tenant-updated');
+        } else {
+            $redirect = redirect()->route('central.tenants.index')->with('status', 'tenant-updated');
+        }
 
         if ($mailNotice !== null) {
             $redirect->with('mail_config_notice', $mailNotice);

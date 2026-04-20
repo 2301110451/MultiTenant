@@ -4,9 +4,9 @@ namespace App\Enums;
 
 enum TenantRole: string
 {
-    case Secretary = 'secretary';
-    case Captain = 'captain';
-    case Custodian = 'custodian';
+    case TenantAdmin = 'tenant_admin';
+    case Staff = 'staff';
+    case Viewer = 'viewer';
     case Resident = 'resident';
 
     /**
@@ -21,9 +21,9 @@ enum TenantRole: string
         $v = strtolower(trim($value));
 
         return match ($v) {
-            'barangay_captain', 'captain' => self::Captain,
-            'secretary' => self::Secretary,
-            'custodian' => self::Custodian,
+            'secretary', 'tenant_admin' => self::TenantAdmin,
+            'barangay_captain', 'captain', 'staff', 'custodian' => self::Staff,
+            'viewer' => self::Viewer,
             'resident', 'user' => self::Resident,
             default => self::tryFrom($v) ?? self::Resident,
         };

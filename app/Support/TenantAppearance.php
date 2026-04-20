@@ -3,6 +3,9 @@
 namespace App\Support;
 
 use App\Models\Plan;
+use App\Models\TenantSetting;
+use App\Models\User;
+use Throwable;
 
 final class TenantAppearance
 {
@@ -11,12 +14,22 @@ final class TenantAppearance
      *
      * @return array<string, string>
      */
-    public static function theme(): array
+    public static function theme(?User $viewer = null): array
     {
         $plan = Tenancy::tenantPlan();
         $slug = $plan ? strtolower($plan->slug) : 'basic';
+        $tenant = Tenancy::currentTenant();
+        $settings = null;
+        if ($tenant) {
+            try {
+                $settings = TenantSetting::query()->first();
+            } catch (Throwable) {
+                // Keep auth pages and shell UI available even if tenant DB is not ready yet.
+                $settings = null;
+            }
+        }
 
-        return match ($slug) {
+        $theme = match ($slug) {
             'premium' => [
                 'slug' => 'premium',
                 'label' => $plan?->name ?? 'Premium',
@@ -30,7 +43,7 @@ final class TenantAppearance
                 'avatar' => 'bg-amber-500',
                 'heroGradient' => 'from-slate-900 via-amber-950 to-slate-900',
                 'heroAccent' => 'text-amber-400',
-                'button' => 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/30',
+                'button' => 't-btn-primary',
                 'panelRing' => 'ring-amber-500/20',
                 'badge' => 'bg-amber-400/20 text-amber-300 border-amber-500/30',
             ],
@@ -47,7 +60,7 @@ final class TenantAppearance
                 'avatar' => 'bg-sky-600',
                 'heroGradient' => 'from-slate-900 via-sky-950 to-slate-900',
                 'heroAccent' => 'text-sky-400',
-                'button' => 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/30',
+                'button' => 't-btn-primary',
                 'panelRing' => 'ring-sky-500/20',
                 'badge' => 'bg-sky-400/20 text-sky-300 border-sky-500/30',
             ],
@@ -56,26 +69,86 @@ final class TenantAppearance
                 'label' => $plan?->name ?? 'Basic',
                 'sidebar' => 'bg-slate-900',
                 'sidebarBorder' => 'border-slate-800',
-                'brandIcon' => 'bg-indigo-600 shadow-indigo-900/50',
-                'brandSub' => 'text-indigo-400',
-                'navActive' => 'bg-indigo-600 text-white shadow shadow-indigo-900/40',
+                'brandIcon' => 'bg-blue-600 shadow-blue-900/50',
+                'brandSub' => 'text-blue-400',
+                'navActive' => 'bg-blue-600 text-white shadow shadow-blue-900/40',
                 'navIdle' => 'text-slate-400 hover:text-white hover:bg-slate-800',
-                'breadcrumbAccent' => 'text-indigo-600',
-                'avatar' => 'bg-indigo-600',
-                'heroGradient' => 'from-slate-900 via-indigo-950 to-slate-900',
-                'heroAccent' => 'text-indigo-400',
-                'button' => 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30',
-                'panelRing' => 'ring-indigo-500/20',
-                'badge' => 'bg-indigo-400/20 text-indigo-300 border-indigo-500/30',
+                'breadcrumbAccent' => 'text-blue-600',
+                'avatar' => 'bg-blue-600',
+                'heroGradient' => 'from-slate-900 via-blue-950 to-slate-900',
+                'heroAccent' => 'text-blue-400',
+                'button' => 't-btn-primary',
+                'panelRing' => 'ring-blue-500/20',
+                'badge' => 'bg-blue-400/20 text-blue-300 border-blue-500/30',
             ],
         };
+
+        $theme['branding_name'] = $settings?->branding_name;
+        // Portal settings (tenant DB) = barangay-wide defaults for accent, page bg, and sidebar.
+        $theme['accent_color'] = $settings?->accent_color;
+        $theme['background_color'] = $settings?->background_color;
+        $theme['sidebar_background_color'] = $settings?->sidebar_background_color;
+        $theme['compact_layout'] = (bool) ($settings?->compact_layout ?? false);
+        $theme['module_toggles'] = $settings?->module_toggles ?? [];
+
+        // Per-user color overrides are intentionally disabled so tenant admin
+        // portal settings apply immediately and consistently to all tenant users.
+
+        return $theme;
+    }
+
+    /**
+     * CSS custom property assignments for inline `style=""` when a tenant picks a custom accent.
+     * Fills nav gradient, soft surfaces, and borders so the whole portal matches the chosen color.
+     *
+     * @return list<string>
+     */
+    public static function tenantAccentStyleFragments(?string $accentHex): array
+    {
+        if ($accentHex === null || $accentHex === '') {
+            return [];
+        }
+
+        $hex = strtoupper(trim($accentHex));
+        if (! preg_match('/^#[0-9A-F]{6}$/', $hex)) {
+            return [];
+        }
+
+        $r = hexdec(substr($hex, 1, 2));
+        $g = hexdec(substr($hex, 3, 2));
+        $b = hexdec(substr($hex, 5, 2));
+
+        $rs = (int) max(0, min(255, (int) round($r * 0.78)));
+        $gs = (int) max(0, min(255, (int) round($g * 0.78)));
+        $bs = (int) max(0, min(255, (int) round($b * 0.78)));
+        $start = sprintf('#%02X%02X%02X', $rs, $gs, $bs);
+
+        return [
+            '--tenant-accent: '.$hex,
+            '--tenant-nav-active-start: '.$start,
+            '--tenant-nav-active-end: '.$hex,
+            sprintf('--tenant-nav-shadow: rgba(%d,%d,%d,0.32)', $r, $g, $b),
+            sprintf('--tenant-accent-soft: rgba(%d,%d,%d,0.11)', $r, $g, $b),
+            sprintf('--tenant-accent-border: rgba(%d,%d,%d,0.2)', $r, $g, $b),
+        ];
     }
 
     public static function planAllowsReports(): bool
     {
         $plan = Tenancy::tenantPlan();
+        $planAllows = $plan instanceof Plan && $plan->allows('reports');
+        $tenant = Tenancy::currentTenant();
+        $settings = null;
+        if ($tenant) {
+            try {
+                $settings = TenantSetting::query()->first();
+            } catch (Throwable) {
+                $settings = null;
+            }
+        }
+        $moduleEnabled = (bool) (($settings?->module_toggles['reports'] ?? true));
 
-        return $plan instanceof Plan && $plan->allows('reports');
+        return $planAllows && $moduleEnabled;
     }
 
     public static function planSummaryBadges(): array

@@ -7,6 +7,8 @@ use App\Mail\BarangayApprovedMail;
 use App\Mail\SubscriptionIntentExtensionApprovedMail;
 use App\Mail\SubscriptionIntentRejectedMail;
 use App\Mail\TenantPortalSuspendedMail;
+use App\Mail\UnsubscribeIntentSubmittedMail;
+use App\Models\CentralUser;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CentralUrl;
@@ -32,7 +34,7 @@ class BarangayOfficerNotifier
     }
 
     /**
-     * Notify Secretary and Captain that the tenant portal URL was suspended from central.
+     * Notify tenant admin/staff that tenant portal URL was suspended from central.
      */
     public function notifyPortalSuspended(Tenant $tenant, string $domain): void
     {
@@ -42,7 +44,7 @@ class BarangayOfficerNotifier
         $portalUrl = Tenancy::tenantPortalUrl($domain);
         $tenant->configureTenantConnection();
         $emails = User::query()
-            ->whereIn('role', [TenantRole::Secretary, TenantRole::Captain])
+            ->whereIn('role', [TenantRole::TenantAdmin, TenantRole::Staff])
             ->pluck('email')
             ->all();
 
@@ -72,7 +74,7 @@ class BarangayOfficerNotifier
     {
         $tenant->configureTenantConnection();
         $emails = User::query()
-            ->whereIn('role', [TenantRole::Secretary, TenantRole::Captain])
+            ->whereIn('role', [TenantRole::TenantAdmin, TenantRole::Staff])
             ->pluck('email')
             ->all();
 
@@ -84,7 +86,7 @@ class BarangayOfficerNotifier
     }
 
     /**
-     * Secretary & Captain: extension request approved by central — portal may be used again.
+     * Tenant admin/staff: extension request approved by central — portal may be used again.
      */
     public function notifySubscriptionExtensionApproved(Tenant $tenant, string $domain): void
     {
@@ -94,7 +96,7 @@ class BarangayOfficerNotifier
         $portalUrl = Tenancy::tenantPortalUrl($domain);
         $tenant->configureTenantConnection();
         $emails = User::query()
-            ->whereIn('role', [TenantRole::Secretary, TenantRole::Captain])
+            ->whereIn('role', [TenantRole::TenantAdmin, TenantRole::Staff])
             ->pluck('email')
             ->all();
 
@@ -110,7 +112,7 @@ class BarangayOfficerNotifier
     }
 
     /**
-     * Secretary & Captain: subscription request (extend or unsubscribe) rejected by central.
+     * Tenant admin/staff: subscription request (extend or unsubscribe) rejected by central.
      */
     public function notifySubscriptionIntentRejected(Tenant $tenant, string $domain, string $intentType): void
     {
@@ -122,7 +124,7 @@ class BarangayOfficerNotifier
 
         $tenant->configureTenantConnection();
         $emails = User::query()
-            ->whereIn('role', [TenantRole::Secretary, TenantRole::Captain])
+            ->whereIn('role', [TenantRole::TenantAdmin, TenantRole::Staff])
             ->pluck('email')
             ->all();
 
@@ -139,6 +141,27 @@ class BarangayOfficerNotifier
                 $portalUrl,
                 $intentLabel,
             ));
+        }
+    }
+
+    /**
+     * Notify central admins that a suspended tenant asked for full unsubscribe.
+     */
+    public function notifyCentralAdminsOfUnsubscribeIntent(Tenant $tenant, ?string $message): void
+    {
+        $this->assertSmtpCredentialsConfigured();
+
+        $tenant->loadMissing('domains');
+        $emails = CentralUser::query()->pluck('email')->all();
+
+        if ($emails === []) {
+            return;
+        }
+
+        $unique = array_values(array_unique(array_filter(array_map('strtolower', $emails))));
+
+        foreach ($unique as $email) {
+            Mail::to($email)->send(new UnsubscribeIntentSubmittedMail($tenant, $message));
         }
     }
 

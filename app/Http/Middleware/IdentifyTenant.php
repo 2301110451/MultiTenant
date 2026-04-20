@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Domain;
 use App\Models\Tenant;
+use App\Support\Tenancy;
 use App\Support\TenantSuspendedView;
 use Closure;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class IdentifyTenant
     {
         $host = strtolower($request->getHost());
 
-        if (\App\Support\Tenancy::isCentralHost($host)) {
+        if (Tenancy::isCentralHost($host)) {
             app()->instance('currentTenant', null);
 
             return $next($request);
@@ -31,7 +32,7 @@ class IdentifyTenant
         $tenant = $domain->tenant()->with(['subscription.plan', 'plan'])->firstOrFail();
 
         if ($tenant->status !== 'active') {
-            return TenantSuspendedView::response($tenant);
+            return TenantSuspendedView::response($tenant, (string) $tenant->status);
         }
 
         $tenant->configureTenantConnection();

@@ -56,3 +56,8 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Barangay Reservation System Docs
+
+- Pricing integration and rollout guide: `docs/pricing-integration.md`
+- Honest scope and limitations (modules, customization, versions, OAuth): `docs/tenant-platform-scope.md`

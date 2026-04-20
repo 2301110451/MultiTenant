@@ -33,7 +33,7 @@ class SubscriptionIntentReviewController extends Controller
     }
 
     /**
-     * Approve: extension → reactivate if suspended, then email officers; unsubscribe → approval recorded only (no reactivation email here).
+     * Approve: extension → reactivate if suspended, then email officers; unsubscribe → mark tenant fully unsubscribed.
      */
     public function approve(Request $request, TenantSubscriptionIntent $intent): RedirectResponse
     {
@@ -56,6 +56,8 @@ class SubscriptionIntentReviewController extends Controller
             ]);
 
             if (! $wasExtend) {
+                $tenant->update(['status' => 'unsubscribed']);
+
                 return;
             }
 
@@ -86,7 +88,7 @@ class SubscriptionIntentReviewController extends Controller
                 'success',
                 $wasExtend
                     ? 'Extension approved. Officers were emailed when SMTP is configured.'
-                    : 'Unsubscribe request approved. The tenant remains suspended; remove the barangay from Central if you are closing the account.'
+                    : 'Unsubscribe request approved. Tenant access is now fully disabled for this barangay.'
             );
 
         if ($mailNotice !== null) {

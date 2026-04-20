@@ -14,10 +14,12 @@ final class TenantGoogleOAuthRedirectService
     {
         $role = $user->role instanceof TenantRole ? $user->role : TenantRole::Resident;
 
+        // Same entry point for all roles; sidebar and permissions reflect TenantAdmin / Staff / Viewer / Resident.
         return match ($role) {
-            TenantRole::Captain => route('tenant.captain.dashboard', [], false),
-            TenantRole::Secretary => route('tenant.secretary.dashboard', [], false),
-            default => route('dashboard', [], false),
+            TenantRole::TenantAdmin,
+            TenantRole::Staff,
+            TenantRole::Viewer,
+            TenantRole::Resident => route('dashboard', [], false),
         };
     }
 }

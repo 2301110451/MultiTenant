@@ -99,7 +99,7 @@
             @foreach ([
                 ['Secure isolation', 'Each barangay runs on its own database with domain-based routing.', 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.746 3.746 0 0121 12z'],
                 ['Plans & limits', 'Basic, Standard, and Premium tiers control features and monthly reservation caps.', 'M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.147-2.146a9.2 9.2 0 00-1.227-1.21 9.28 9.28 0 00-1.525-.93 9.2 9.2 0 00-1.727-.63 9.28 9.28 0 00-1.9-.19 9.28 9.28 0 00-1.9.19 9.2 9.2 0 00-1.727.63 9.28 9.28 0 00-1.525.93 9.28 9.28 0 00-1.227 1.21l-2.147 2.146a11.95 11.95 0 00-5.814 5.519L2.25 18z'],
-                ['Officer-ready accounts', 'Secretary and Punong Barangay accounts are prepared on provisioning after approval.', 'M16.5 18.75h-9a2.25 2.25 0 01-2.25-2.25v-9A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25zM9.75 9.75h4.5m-4.5 3h4.5'],
+                ['Tenant account setup', 'Tenant Admin and optional Staff accounts are prepared on provisioning after approval.', 'M16.5 18.75h-9a2.25 2.25 0 01-2.25-2.25v-9A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25zM9.75 9.75h4.5m-4.5 3h4.5'],
             ] as [$title, $desc, $icon])
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                     <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600/20">
@@ -199,44 +199,44 @@
                         </div>
 
                         <div class="space-y-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-300">Barangay Secretary</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-300">Tenant Admin</p>
                             <label class="block text-xs text-slate-300">Email *</label>
-                            <input name="secretary_email" type="email" required value="{{ old('secretary_email') }}"
+                            <input name="tenant_admin_email" type="email" required value="{{ old('tenant_admin_email') }}"
                                    class="w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
-                            @error('secretary_email')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
+                            @error('tenant_admin_email')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
 
                             <div class="grid sm:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs text-slate-300">Password *</label>
-                                    <input name="secretary_password" type="password" required
+                                    <input name="tenant_admin_password" type="password" required
                                            class="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
-                                    @error('secretary_password')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
+                                    @error('tenant_admin_password')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs text-slate-300">Confirm password *</label>
-                                    <input name="secretary_password_confirmation" type="password" required
+                                    <input name="tenant_admin_password_confirmation" type="password" required
                                            class="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
                                 </div>
                             </div>
                         </div>
 
                         <div class="space-y-3 border-t border-white/10 pt-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-300">Punong Barangay (Captain)</p>
-                            <label class="block text-xs text-slate-300">Email *</label>
-                            <input name="captain_email" type="email" required value="{{ old('captain_email') }}"
+                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-300">Staff (optional)</p>
+                            <label class="block text-xs text-slate-300">Email</label>
+                            <input name="staff_email" type="email" value="{{ old('staff_email') }}"
                                    class="w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
-                            @error('captain_email')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
+                            @error('staff_email')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
 
                             <div class="grid sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs text-slate-300">Password *</label>
-                                    <input name="captain_password" type="password" required
+                                    <label class="block text-xs text-slate-300">Password</label>
+                                    <input name="staff_password" type="password"
                                            class="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
-                                    @error('captain_password')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
+                                    @error('staff_password')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-slate-300">Confirm password *</label>
-                                    <input name="captain_password_confirmation" type="password" required
+                                    <label class="block text-xs text-slate-300">Confirm password</label>
+                                    <input name="staff_password_confirmation" type="password"
                                            class="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
                                 </div>
                             </div>

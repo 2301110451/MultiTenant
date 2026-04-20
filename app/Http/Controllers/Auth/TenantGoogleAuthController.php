@@ -9,18 +9,26 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantGoogleOAuthRedirectService;
 use App\Support\Tenancy;
+use App\Support\TenantGoogleOAuthRedirectUri;
 use App\Support\TenantSuspendedView;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Symfony\Component\HttpFoundation\Response;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class TenantGoogleAuthController extends Controller
 {
+    private const SESSION_TENANT_HOST = 'google_oauth_tenant_host';
+
+    private const OAUTH_STATE_CACHE_PREFIX = 'tenant_google_oauth:v1:';
+
+    private const OAUTH_STATE_TTL_SECONDS = 600;
+
     public function __construct(
         private TenantGoogleOAuthRedirectService $googleOAuthRedirects,
     ) {}
@@ -31,23 +39,82 @@ class TenantGoogleAuthController extends Controller
             abort(403, 'Google authentication is only available for tenant portals.');
         }
 
-        $state = $this->encodeTenantState(request()->getHost());
+        if (! $this->googleOAuthConfigured()) {
+            return redirect()->route('login')
+                ->withErrors([
+                    'email' => 'Google sign-in is not configured. In .env set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from Google Cloud Console → APIs & Services → Credentials (OAuth 2.0 Client). This is not the same as MAIL_PASSWORD for sending email.',
+                ]);
+        }
 
-        $redirectUri = $this->googleRedirectUri();
+        $request = request();
+        $host = strtolower($request->getHost());
 
-        return Socialite::driver('google')
-            ->stateless()
-            ->redirectUrl($redirectUri)
-            ->with(['state' => $state])
-            ->redirect();
+        // Session backup when authorize + callback share the same host (e.g. production domains).
+        $request->session()->put(self::SESSION_TENANT_HOST, $host);
+
+        // Google often rejects *.localhost (and similar) as redirect URIs. We use 127.0.0.1 + port for OAuth
+        // when appropriate and carry the real tenant host in `state` (opaque id → cache).
+        $oauthState = Str::random(40);
+        Cache::put(
+            self::OAUTH_STATE_CACHE_PREFIX.$oauthState,
+            ['tenant_host' => $host],
+            now()->addSeconds(self::OAUTH_STATE_TTL_SECONDS)
+        );
+
+        try {
+            // `with()` only for this response; callback uses a fresh driver (avoid merging `state` into token POST).
+            return Socialite::driver('google')
+                ->stateless()
+                ->redirectUrl(TenantGoogleOAuthRedirectUri::resolve($request))
+                ->with(['state' => $oauthState])
+                ->redirect();
+        } catch (\Throwable $e) {
+            Log::warning('tenant_google_oauth_redirect_failed', [
+                'host' => $host,
+                'message' => $e->getMessage(),
+            ]);
+            report($e);
+
+            return redirect()->route('login')
+                ->withErrors([
+                    'email' => 'Google sign-in could not start. Check GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, run php artisan config:clear, and add this exact redirect URI in Google Cloud: '.TenantGoogleOAuthRedirectUri::resolve($request),
+                ]);
+        }
     }
 
     public function callback(Request $request): RedirectResponse
     {
-        $tenantHost = $this->decodeTenantState((string) $request->query('state'));
+        try {
+            $googleUser = Socialite::driver('google')
+                ->stateless()
+                ->with([])
+                ->redirectUrl(TenantGoogleOAuthRedirectUri::resolve($request))
+                ->user();
+        } catch (InvalidStateException $e) {
+            return $this->redirectOAuthLoginWithError(
+                $request,
+                'Your Google sign-in session expired or cookies are blocked. Please sign in with email and password.',
+            );
+        } catch (\Throwable $e) {
+            Log::warning('tenant_google_oauth_token_failed', [
+                'callback_host' => $request->getHost(),
+                'message' => $e->getMessage(),
+            ]);
+            report($e);
 
-        if ($tenantHost === null || Tenancy::isCentralHost($tenantHost)) {
-            abort(422, 'Google sign-in session is invalid. Please start again from your barangay login page.');
+            return $this->redirectOAuthLoginWithError(
+                $request,
+                'Google sign-in failed. Confirm the redirect URI in Google Cloud matches this app (including host and port), then try again.',
+            );
+        }
+
+        $tenantHost = $this->resolveTenantHostFromOAuth($request);
+
+        if ($tenantHost === '') {
+            return $this->redirectOAuthLoginWithError(
+                $request,
+                'Google sign-in could not verify your barangay portal. For local *.localhost tenants, add http://127.0.0.1:YOUR_PORT/auth/google/callback to Authorized redirect URIs in Google Cloud Console, then try again.',
+            );
         }
 
         $tenant = $this->tenantForPortalHost($tenantHost);
@@ -61,73 +128,19 @@ class TenantGoogleAuthController extends Controller
 
         $tenant->configureTenantConnection();
 
-        try {
-            $googleUser = Socialite::driver('google')
-                ->stateless()
-                ->redirectUrl($this->googleRedirectUri())
-                ->user();
-        } catch (\Throwable) {
-            return $this->redirectToTenantLogin($tenantHost, 'Google sign-in failed. Please try again.');
-        }
         $email = Str::lower((string) $googleUser->getEmail());
 
         if ($email === '') {
             return $this->redirectToTenantLogin($tenantHost, 'Google account did not provide an email address.');
         }
 
-        $user = $this->firstOrCreateTenantUserFromGoogle($email, $googleUser->getName());
+        $user = $this->findOrCreateTenantUserFromGoogle($email, $googleUser->getName());
+        $user->syncRbacRoleFromColumn();
+        $user->load('roles');
 
-        $token = Str::random(64);
-        Cache::put(
-            $this->googleFinalizeCacheKey($token),
-            [
-                'tenant' => strtolower($tenantHost),
-                'email' => $user->email,
-                'name' => $googleUser->getName(),
-            ],
-            now()->addMinutes(5),
-        );
-
-        $portalBase = rtrim(Tenancy::tenantPortalUrl($tenantHost), '/');
-        $finalizePath = route('tenant.google.finalize', ['token' => $token], false);
-
-        return redirect()->to($portalBase.$finalizePath);
-    }
-
-    public function finalize(Request $request): RedirectResponse
-    {
-        if (Tenancy::isCentralHost($request->getHost())) {
-            abort(403, 'Google authentication finalization is only available for tenant portals.');
+        if (! $user->is_active) {
+            return $this->redirectToTenantLogin($tenantHost, 'This account is inactive. Please contact your Tenant Admin.');
         }
-
-        $token = (string) $request->query('token', '');
-        if ($token === '') {
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Google sign-in session is invalid. Please try again.']);
-        }
-
-        $data = Cache::pull($this->googleFinalizeCacheKey($token));
-        if (! is_array($data)) {
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Google sign-in session expired. Please try again.']);
-        }
-
-        $tenantHost = strtolower((string) ($data['tenant'] ?? ''));
-        $email = Str::lower((string) ($data['email'] ?? ''));
-
-        if ($tenantHost === '' || $email === '') {
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Google sign-in session is invalid. Please try again.']);
-        }
-
-        if (strtolower($request->getHost()) !== $tenantHost) {
-            return $this->redirectToTenantLogin($tenantHost, 'Please complete Google sign-in on the correct barangay portal.');
-        }
-
-        $user = $this->firstOrCreateTenantUserFromGoogle(
-            $email,
-            isset($data['name']) ? (string) $data['name'] : null,
-        );
 
         Auth::guard('tenant')->login($user);
         $request->session()->regenerate();
@@ -135,16 +148,93 @@ class TenantGoogleAuthController extends Controller
         return redirect()->to($this->googleOAuthRedirects->pathAfterLogin($user));
     }
 
-    private function firstOrCreateTenantUserFromGoogle(string $email, ?string $googleName): User
+    public function finalize(Request $request): RedirectResponse
     {
-        return User::query()->firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => $this->displayNameForNewGoogleUser($email, $googleName),
-                'password' => Hash::make(Str::random(40)),
-                'role' => TenantRole::Resident,
-            ],
-        );
+        return redirect()->route('login')
+            ->withErrors(['email' => 'Please sign in from the login page.']);
+    }
+
+    private function redirectOAuthLoginWithError(Request $request, string $message): RedirectResponse
+    {
+        $tenantHost = $this->peekTenantHostFromOAuthState($request);
+        if ($tenantHost !== '') {
+            return $this->redirectToTenantLogin($tenantHost, $message);
+        }
+
+        return redirect()->route('login')->withErrors(['email' => $message]);
+    }
+
+    /**
+     * Read tenant host from cache without consuming it (used when OAuth fails before resolveTenantHostFromOAuth runs).
+     */
+    private function peekTenantHostFromOAuthState(Request $request): string
+    {
+        $state = trim((string) $request->query('state', ''));
+        if ($state === '') {
+            return '';
+        }
+
+        $data = Cache::get(self::OAUTH_STATE_CACHE_PREFIX.$state);
+        if (! is_array($data)) {
+            return '';
+        }
+
+        $host = strtolower(trim((string) ($data['tenant_host'] ?? '')));
+
+        return $host;
+    }
+
+    /**
+     * Resolve tenant portal host: OAuth `state` → cache (set on redirect), then session, then request host.
+     */
+    private function resolveTenantHostFromOAuth(Request $request): string
+    {
+        $state = trim((string) $request->query('state', ''));
+        if ($state !== '') {
+            $data = Cache::pull(self::OAUTH_STATE_CACHE_PREFIX.$state);
+            if (is_array($data)) {
+                $host = strtolower(trim((string) ($data['tenant_host'] ?? '')));
+                if ($host !== '') {
+                    return $host;
+                }
+            }
+        }
+
+        $fromSession = strtolower(trim((string) $request->session()->pull(self::SESSION_TENANT_HOST, '')));
+        if ($fromSession !== '') {
+            return $fromSession;
+        }
+
+        $h = strtolower($request->getHost());
+        if (! Tenancy::isCentralHost($h)) {
+            return $h;
+        }
+
+        return '';
+    }
+
+    /**
+     * Existing barangay accounts keep their role (admin, staff, viewer, resident). New Google sign-ups become residents.
+     */
+    private function findOrCreateTenantUserFromGoogle(string $email, ?string $googleName): User
+    {
+        $existing = User::query()->where('email', $email)->first();
+
+        if ($existing !== null) {
+            if (($existing->name === null || trim((string) $existing->name) === '') && $googleName !== null && trim($googleName) !== '') {
+                $existing->forceFill(['name' => $googleName])->save();
+            }
+
+            return $existing->fresh();
+        }
+
+        return User::query()->create([
+            'name' => $this->displayNameForNewGoogleUser($email, $googleName),
+            'email' => $email,
+            'password' => Hash::make(Str::random(40)),
+            'role' => TenantRole::Resident,
+            'is_active' => true,
+        ]);
     }
 
     private function displayNameForNewGoogleUser(string $email, ?string $googleName): string
@@ -173,58 +263,11 @@ class TenantGoogleAuthController extends Controller
             ->withErrors(['email' => $message]);
     }
 
-    private function googleFinalizeCacheKey(string $token): string
+    private function googleOAuthConfigured(): bool
     {
-        return 'tenant_google_finalize:'.$token;
-    }
+        $id = trim((string) config('services.google.client_id', ''));
+        $secret = trim((string) config('services.google.client_secret', ''));
 
-    private function googleStateCacheKey(string $token): string
-    {
-        return 'tenant_google_state:'.$token;
-    }
-
-    private function googleRedirectUri(): string
-    {
-        $configured = trim((string) config('services.google.redirect', ''));
-
-        if ($configured !== '') {
-            return $configured;
-        }
-
-        return route('tenant.google.callback', [], true);
-    }
-
-    private function encodeTenantState(string $host): string
-    {
-        $token = Str::random(64);
-
-        Cache::put(
-            $this->googleStateCacheKey($token),
-            ['tenant' => strtolower($host), 'ts' => now()->timestamp],
-            now()->addMinutes(15),
-        );
-
-        return $token;
-    }
-
-    private function decodeTenantState(string $state): ?string
-    {
-        if ($state === '') {
-            return null;
-        }
-
-        $data = Cache::pull($this->googleStateCacheKey($state));
-        if (! is_array($data)) {
-            return null;
-        }
-
-        $tenant = strtolower((string) ($data['tenant'] ?? ''));
-        $ts = (int) ($data['ts'] ?? 0);
-
-        if ($tenant === '' || $ts <= 0 || now()->diffInMinutes(\Carbon\Carbon::createFromTimestamp($ts), false) < -15) {
-            return null;
-        }
-
-        return $tenant;
+        return $id !== '' && $secret !== '';
     }
 }

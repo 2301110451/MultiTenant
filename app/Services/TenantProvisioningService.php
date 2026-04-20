@@ -77,10 +77,10 @@ class TenantProvisioningService
         string $name,
         string $domain,
         ?int $planId = null,
-        ?string $secretaryEmail = null,
-        ?string $secretaryPassword = null,
-        ?string $captainEmail = null,
-        ?string $captainPassword = null,
+        ?string $tenantAdminEmail = null,
+        ?string $tenantAdminPassword = null,
+        ?string $staffEmail = null,
+        ?string $staffPassword = null,
     ): Tenant {
         $planId = $planId ?? Plan::query()->where('slug', 'basic')->value('id');
         $database = $this->generateUniqueDatabaseName($name);
@@ -116,14 +116,14 @@ class TenantProvisioningService
 
             $tenant->runTenantMigrations();
 
-            if ($secretaryEmail && $secretaryPassword && $captainEmail && $captainPassword) {
-                $this->createInitialOfficerAccounts(
+            if ($tenantAdminEmail && $tenantAdminPassword) {
+                $this->createInitialTenantAccounts(
                     $tenant,
                     $name,
-                    $secretaryEmail,
-                    $secretaryPassword,
-                    $captainEmail,
-                    $captainPassword,
+                    $tenantAdminEmail,
+                    $tenantAdminPassword,
+                    $staffEmail,
+                    $staffPassword,
                 );
             }
 
@@ -139,32 +139,31 @@ class TenantProvisioningService
         }
     }
 
-    /**
-     * Create Barangay Secretary and Punong Barangay accounts in the tenant database.
-     */
-    private function createInitialOfficerAccounts(
+    private function createInitialTenantAccounts(
         Tenant $tenant,
         string $barangayName,
-        string $secretaryEmail,
-        string $secretaryPassword,
-        string $captainEmail,
-        string $captainPassword,
+        string $tenantAdminEmail,
+        string $tenantAdminPassword,
+        ?string $staffEmail = null,
+        ?string $staffPassword = null,
     ): void {
         $tenant->configureTenantConnection();
 
         User::query()->create([
-            'name' => "{$barangayName} — Secretary",
-            'email' => Str::lower($secretaryEmail),
-            'password' => Hash::make($secretaryPassword),
-            'role' => TenantRole::Secretary,
+            'name' => "{$barangayName} — Tenant Admin",
+            'email' => Str::lower($tenantAdminEmail),
+            'password' => Hash::make($tenantAdminPassword),
+            'role' => TenantRole::TenantAdmin,
         ]);
 
-        User::query()->create([
-            'name' => "{$barangayName} — Punong Barangay",
-            'email' => Str::lower($captainEmail),
-            'password' => Hash::make($captainPassword),
-            'role' => TenantRole::Captain,
-        ]);
+        if ($staffEmail && $staffPassword) {
+            User::query()->create([
+                'name' => "{$barangayName} — Staff",
+                'email' => Str::lower($staffEmail),
+                'password' => Hash::make($staffPassword),
+                'role' => TenantRole::Staff,
+            ]);
+        }
     }
 
     private function isValidDatabaseName(string $databaseName): bool

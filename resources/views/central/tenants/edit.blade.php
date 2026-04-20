@@ -1,6 +1,6 @@
 <x-central-layout title="Edit Barangay" breadcrumb="Edit Barangay">
 
-    <div class="px-6 py-8 sm:px-10 max-w-2xl space-y-6">
+    <div class="px-6 py-8 sm:px-10 max-w-2xl space-y-6" x-data="{ showDeleteModal: false }">
 
         {{-- back link --}}
         <a href="{{ route('central.tenants.index') }}"
@@ -24,7 +24,15 @@
                         <h2 class="text-white font-bold text-lg">{{ $tenant->name }}</h2>
                         <p class="text-slate-400 text-sm font-mono">{{ $tenant->domains->first()?->domain ?? '—' }}</p>
                     </div>
-                    <span class="ml-auto px-2.5 py-0.5 rounded-full text-xs font-semibold {{ ($tenant->status ?? 'active') === 'active' ? 'bg-emerald-400/20 text-emerald-300' : 'bg-red-400/20 text-red-300' }}">
+                    @php
+                        $tenantStatus = $tenant->status ?? 'active';
+                        $statusChipClass = match ($tenantStatus) {
+                            'active' => 'bg-emerald-400/20 text-emerald-300',
+                            'unsubscribed' => 'bg-slate-400/20 text-slate-200',
+                            default => 'bg-red-400/20 text-red-300',
+                        };
+                    @endphp
+                    <span class="ml-auto px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusChipClass }}">
                         {{ ucfirst($tenant->status ?? 'active') }}
                     </span>
                 </div>
@@ -104,7 +112,7 @@
                         Account Status <span class="text-red-500">*</span>
                     </label>
                     <div class="flex gap-4">
-                        @foreach(['active' => ['Active', 'text-emerald-700 border-emerald-400 bg-emerald-50'], 'suspended' => ['Suspended', 'text-red-700 border-red-400 bg-red-50']] as $val => [$label, $cls])
+                        @foreach(['active' => ['Active', 'text-emerald-700 border-emerald-400 bg-emerald-50'], 'suspended' => ['Suspended', 'text-red-700 border-red-400 bg-red-50'], 'unsubscribed' => ['Unsubscribed', 'text-slate-700 border-slate-400 bg-slate-100']] as $val => [$label, $cls])
                         <label class="flex items-center gap-2.5 cursor-pointer group">
                             <input type="radio" name="status" value="{{ $val }}"
                                    {{ old('status', $tenant->status ?? 'active') === $val ? 'checked' : '' }}
@@ -149,12 +157,37 @@
                         Permanently delete <strong>{{ $tenant->name }}</strong> and all associated data. This action cannot be undone.
                     </p>
                 </div>
-                <form method="POST" action="{{ route('central.tenants.destroy', $tenant) }}"
-                      onsubmit="return confirm('Type the barangay name to confirm deletion.\n\nAre you ABSOLUTELY sure you want to delete {{ addslashes($tenant->name) }}?')">
-                    @csrf @method('DELETE')
-                    <button type="submit"
-                            class="shrink-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition shadow-sm shadow-red-600/30">
-                        Delete Barangay
+                <button
+                    type="button"
+                    @click="showDeleteModal = true"
+                    class="shrink-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition shadow-sm shadow-red-600/30"
+                >
+                    Delete Barangay
+                </button>
+            </div>
+        </div>
+
+        <div
+            x-show="showDeleteModal"
+            x-transition.opacity
+            class="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center px-4"
+            style="display:none"
+            @keydown.escape.window="showDeleteModal = false"
+            @click.self="showDeleteModal = false"
+        >
+            <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-700 shadow-xl p-6">
+                <h3 class="text-lg font-bold text-red-700 dark:text-red-400">Delete {{ $tenant->name }}?</h3>
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    This action is permanent and cannot be undone.
+                </p>
+                <form method="POST" action="{{ route('central.tenants.destroy', $tenant) }}" class="mt-5 flex justify-end gap-2">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" @click="showDeleteModal = false" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700">
+                        Delete Now
                     </button>
                 </form>
             </div>

@@ -2,6 +2,7 @@
     $tenant = \App\Support\Tenancy::currentTenant();
     $subscription = $tenant?->subscription;
     $effectivePlan = $subscription?->plan ?? $tenant?->plan;
+    $tenantStatus = $tenantStatus ?? ($tenant?->status ?? 'suspended');
 @endphp
 
 <x-tenant-guest-layout>
@@ -14,11 +15,19 @@
             </div>
             <div>
                 <p class="text-xs font-semibold tracking-widest text-amber-800 uppercase">Portal unavailable</p>
-                <h1 class="mt-1 text-2xl font-bold text-slate-900 tracking-tight">This barangay portal is suspended</h1>
-                <p class="mt-2 text-sm text-slate-600 leading-relaxed">
-                    The central administrator has deactivated access at <span class="font-medium text-slate-800">{{ $domainHost }}</span>.
-                    Public sign-in and reservations are paused until the portal is reactivated.
-                </p>
+                @if($tenantStatus === 'unsubscribed')
+                    <h1 class="mt-1 text-2xl font-bold text-slate-900 tracking-tight">This barangay portal is completely unavailable</h1>
+                    <p class="mt-2 text-sm text-slate-600 leading-relaxed">
+                        The central administrator has approved full unsubscribe for <span class="font-medium text-slate-800">{{ $domainHost }}</span>.
+                        This tenant and all users can no longer access the portal.
+                    </p>
+                @else
+                    <h1 class="mt-1 text-2xl font-bold text-slate-900 tracking-tight">This barangay portal is suspended</h1>
+                    <p class="mt-2 text-sm text-slate-600 leading-relaxed">
+                        The central administrator has deactivated access at <span class="font-medium text-slate-800">{{ $domainHost }}</span>.
+                        Public sign-in and reservations are paused until the portal is reactivated.
+                    </p>
+                @endif
             </div>
         </div>
 
@@ -65,6 +74,10 @@
                     <dt class="text-slate-500 shrink-0">HTTP status</dt>
                     <dd class="font-mono text-xs text-slate-600">503 Service Unavailable</dd>
                 </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500 shrink-0">Tenant access</dt>
+                    <dd class="font-medium text-slate-900 text-right capitalize">{{ $tenantStatus }}</dd>
+                </div>
             </dl>
         </div>
 
@@ -75,15 +88,21 @@
                     Officers can open a secure form on the central site to request a full <strong>unsubscribe</strong> or an <strong>extension</strong> (same link as in your suspension email).
                 </p>
                 <a href="{{ $subscriptionActionUrl }}"
-                   class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700">
+                   class="mt-4 inline-flex items-center justify-center gap-2 t-btn-primary px-5 py-2.5 shadow">
                     Open unsubscribe / extension form
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
                 </a>
             </div>
         @endif
 
-        <p class="text-xs text-slate-500 leading-relaxed">
-            If you are a barangay officer and believe this is a mistake, contact your central administrator to restore access.
-        </p>
+        @if($tenantStatus === 'unsubscribed')
+            <p class="text-xs text-slate-500 leading-relaxed">
+                This barangay account is fully unsubscribed. Please contact the central administrator if you need to register again.
+            </p>
+        @else
+            <p class="text-xs text-slate-500 leading-relaxed">
+                If you are a barangay officer and believe this is a mistake, contact your central administrator to restore access.
+            </p>
+        @endif
     </div>
 </x-tenant-guest-layout>
