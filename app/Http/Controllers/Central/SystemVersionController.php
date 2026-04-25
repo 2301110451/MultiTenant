@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Models\GlobalUpdateAuditLog;
+use App\Models\SystemVersion;
 use App\Models\Tenant;
 use App\Models\UpdateAnnouncement;
-use App\Models\SystemVersion;
 use App\Services\GitHubService;
-use Illuminate\Support\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class SystemVersionController extends Controller

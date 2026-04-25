@@ -36,10 +36,10 @@ class BackfillTenantDefaultSettings extends Command
             return self::SUCCESS;
         }
 
-        $dryRun  = (bool) $this->option('dry-run');
-        $seeded  = 0;
+        $dryRun = (bool) $this->option('dry-run');
+        $seeded = 0;
         $skipped = 0;
-        $failed  = 0;
+        $failed = 0;
 
         if ($dryRun) {
             $this->warn('[DRY RUN] No changes will be written.');
@@ -57,22 +57,24 @@ class BackfillTenantDefaultSettings extends Command
                 if ($exists) {
                     $this->line("  <fg=gray>SKIP</>    {$tenant->name} <fg=gray>(id={$tenant->id})</> — settings row already exists");
                     $skipped++;
+
                     continue;
                 }
 
                 if ($dryRun) {
                     $this->line("  <fg=cyan>PENDING</>  {$tenant->name} <fg=gray>(id={$tenant->id})</> — would seed default row");
                     $seeded++;
+
                     continue;
                 }
 
                 TenantSetting::create([
-                    'branding_name'            => null,
-                    'accent_color'             => null,
-                    'background_color'         => null,
+                    'branding_name' => null,
+                    'accent_color' => null,
+                    'background_color' => null,
                     'sidebar_background_color' => null,
-                    'compact_layout'           => false,
-                    'module_toggles'           => [],
+                    'compact_layout' => false,
+                    'module_toggles' => [],
                 ]);
 
                 $this->line("  <fg=green>SEEDED</>   {$tenant->name} <fg=gray>(id={$tenant->id})</>");

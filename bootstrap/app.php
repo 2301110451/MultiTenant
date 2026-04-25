@@ -1,11 +1,11 @@
 <?php
 
 use App\Http\Middleware\AuthenticateContext;
+use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\EnsureTenantHost;
 use App\Http\Middleware\EnsureTenantPermission;
 use App\Http\Middleware\EnsureTenantPlanFeature;
 use App\Http\Middleware\EnsureTenantRole;
-use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\IdentifyTenant;
 use App\Http\Middleware\RedirectIfAuthenticatedContext;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;

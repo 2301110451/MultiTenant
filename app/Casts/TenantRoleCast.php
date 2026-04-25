@@ -14,7 +14,6 @@ class TenantRoleCast implements CastsAttributes
     }
 
     /**
-     * @param  mixed  $value
      * @return array<string, string>
      */
     public function set(Model $model, string $key, mixed $value, array $attributes): array

@@ -28,8 +28,7 @@ class BarangayOfficerNotifier
         ?string $tenantAdminPassword = null,
         ?string $staffEmail = null,
         ?string $staffPassword = null,
-    ): void
-    {
+    ): void {
         $this->assertSmtpCredentialsConfigured();
 
         $domain = strtolower(trim($domain));

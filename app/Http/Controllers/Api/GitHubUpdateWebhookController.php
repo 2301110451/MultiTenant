@@ -134,7 +134,6 @@ class GitHubUpdateWebhookController extends Controller
     }
 
     /**
-     * @param  mixed  $value
      * @return list<string>
      */
     private function toArray(mixed $value): array

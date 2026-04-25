@@ -8,10 +8,10 @@ use App\Models\DeploymentCandidate;
 use App\Models\DeploymentRun;
 use App\Models\DeploymentSnapshot;
 use App\Services\DeploymentUpdateIngestionService;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class DeploymentCandidateController extends Controller

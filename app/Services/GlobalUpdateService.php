@@ -172,7 +172,7 @@ class GlobalUpdateService
                             'synced_at' => now(),
                         ])->save();
                     } else {
-                        $announcement = $announcement ?? new UpdateAnnouncement();
+                        $announcement = $announcement ?? new UpdateAnnouncement;
                         $announcement->fill([
                             'title' => $title,
                             'version' => $version,

@@ -8,7 +8,6 @@ return new class extends Migration
     /**
      * Staff could see Settings in the sidebar (canManageTenant) but lacked RBAC
      * permissions, causing 403. Grant settings here for every existing tenant DB.
-     *
      */
     public function up(): void
     {

@@ -2,8 +2,8 @@
 
 namespace App\View\Components;
 
-use App\Support\TenantAppearance;
 use App\Support\Tenancy;
+use App\Support\TenantAppearance;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 

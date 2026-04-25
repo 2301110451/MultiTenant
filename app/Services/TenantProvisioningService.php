@@ -151,18 +151,18 @@ class TenantProvisioningService
         $tenant->configureTenantConnection();
 
         User::query()->create([
-            'name'     => "{$barangayName} — Tenant Admin",
-            'email'    => Str::lower($tenantAdminEmail),
+            'name' => "{$barangayName} — Tenant Admin",
+            'email' => Str::lower($tenantAdminEmail),
             'password' => Hash::make($tenantAdminPassword),
-            'role'     => TenantRole::TenantAdmin,
+            'role' => TenantRole::TenantAdmin,
         ]);
 
         if ($staffEmail && $staffPassword) {
             User::query()->create([
-                'name'     => "{$barangayName} — Staff",
-                'email'    => Str::lower($staffEmail),
+                'name' => "{$barangayName} — Staff",
+                'email' => Str::lower($staffEmail),
                 'password' => Hash::make($staffPassword),
-                'role'     => TenantRole::Staff,
+                'role' => TenantRole::Staff,
             ]);
         }
 
@@ -170,12 +170,12 @@ class TenantProvisioningService
         // starts with an explicit row (falls back to CSS variable defaults).
         // firstOrCreate is idempotent — safe to call repeatedly.
         TenantSetting::firstOrCreate([], [
-            'branding_name'            => null,
-            'accent_color'             => null,
-            'background_color'         => null,
+            'branding_name' => null,
+            'accent_color' => null,
+            'background_color' => null,
             'sidebar_background_color' => null,
-            'compact_layout'           => false,
-            'module_toggles'           => [],
+            'compact_layout' => false,
+            'module_toggles' => [],
         ]);
     }
 

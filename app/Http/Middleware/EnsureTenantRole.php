@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\TenantRole;
+use App\Models\User;
 use App\Services\TenantGoogleOAuthRedirectService;
 use App\Support\Tenancy;
 use Closure;
@@ -22,7 +23,7 @@ class EnsureTenantRole
             abort(404);
         }
 
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::guard('tenant')->user();
         if ($user === null) {
             return redirect()->guest(route('login', absolute: false));

@@ -1,15 +1,12 @@
 <?php
 
+use App\Models\DeploymentRun;
+use App\Models\DeploymentSnapshot;
 use App\Models\SystemVersion;
 use App\Models\Tenant;
-use App\Models\UpdateEvent;
-use App\Jobs\AnalyzeUpdateEventJob;
-use App\Services\GitHubService;
 use App\Services\DeploymentSnapshotService;
 use App\Services\DeploymentUpdateIngestionService;
 use App\Services\SafeRollbackService;
-use App\Models\DeploymentRun;
-use App\Models\DeploymentSnapshot;
 use App\Support\TenantGoogleOAuthRedirectUri;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -218,6 +215,7 @@ Artisan::command('audit:backfill-tenant-activity', function () {
 
             if (! Schema::connection('tenant')->hasTable('audit_logs')) {
                 $this->line("Skipped tenant #{$tenant->id} {$tenant->name} (audit_logs table not found).");
+
                 continue;
             }
 
@@ -253,6 +251,7 @@ Artisan::command('audit:backfill-tenant-activity', function () {
 
                         if ($existing) {
                             $totalSkipped++;
+
                             continue;
                         }
 

@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\ReservationApiController;
 use App\Http\Controllers\Api\GitHubUpdateWebhookController;
+use App\Http\Controllers\Api\ReservationApiController;
 use App\Http\Middleware\EnsureTenantHost;
 use App\Http\Middleware\IdentifyTenant;
 use Illuminate\Support\Facades\Route;
