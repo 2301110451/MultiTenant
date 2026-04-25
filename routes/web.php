@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Auth\TenantGoogleAuthController;
 use App\Http\Controllers\Central\DeploymentCandidateController;
 use App\Http\Controllers\Central\DeploymentRunController;
 use App\Http\Controllers\Central\GlobalUpdateController;
@@ -46,12 +45,6 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
 
         Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
         Route::post('register', [RegisteredUserController::class, 'store']);
-        // Alias route to support /auth/google pattern.
-        Route::get('auth/google', [TenantGoogleAuthController::class, 'redirect'])->name('tenant.google');
-        Route::get('auth/google/redirect', [TenantGoogleAuthController::class, 'redirect'])->name('tenant.google.redirect');
-        Route::get('auth/google/callback', [TenantGoogleAuthController::class, 'callback'])->name('tenant.google.callback');
-        Route::get('auth/google/finalize', [TenantGoogleAuthController::class, 'finalize'])->name('tenant.google.finalize');
-
         Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
         Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 
