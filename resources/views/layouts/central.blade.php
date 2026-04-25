@@ -79,13 +79,11 @@
                 ['route' => 'central.plans.index',   'label' => 'Plans',       'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
                 ['route' => 'central.support-tickets.index',   'label' => 'Support',       'icon' => 'M8 10h8m-8 4h5m4-2a9 9 0 11-18 0 9 9 0 0118 0z'],
                 ['route' => 'central.update-announcements.index',   'label' => 'Updates',       'icon' => 'M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z'],
-                ['route' => 'central.system-versions.index',   'label' => 'Versions',       'icon' => 'M11.25 3.75h1.5m-6 0h.008v.008H5.25V3.75zm13.5 0h.008v.008h-.008V3.75zM3.75 7.5h16.5v12.75H3.75V7.5z'],
             ];
 
             if ($isSuperAdmin) {
                 $navItems[] = ['route' => 'central.audit-logs.index', 'label' => 'Audit logs', 'icon' => 'M9 12h6m-6 4h3m1.5-10.5l4.5 4.5m-10.5-4.5h3.75a1.5 1.5 0 011.5 1.5V7.5a1.5 1.5 0 001.5 1.5h.75a1.5 1.5 0 011.5 1.5v7.5a1.5 1.5 0 01-1.5 1.5h-9a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5z'];
-                $navItems[] = ['route' => 'central.global-updates.candidates.index', 'match' => 'central.global-updates.candidates.index', 'label' => 'Deployments', 'icon' => 'M4.5 12.75l6 6 9-13.5M4.5 7.5h15'];
-                $navItems[] = ['route' => 'central.global-updates.candidates.rejected', 'match' => 'central.global-updates.candidates.rejected', 'label' => 'Rejected Deployments', 'icon' => 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0z'];
+                $navItems[] = ['route' => 'central.releases.index', 'label' => 'Central Releases', 'icon' => 'M4.5 5.25h15m-15 6h15m-15 6h9'];
             }
 
         @endphp
@@ -287,7 +285,7 @@
     </footer>
 </div>
 
-<x-recaptcha-disclosure force />
+<x-recaptcha-disclosure />
 @stack('scripts')
 </body>
 </html>

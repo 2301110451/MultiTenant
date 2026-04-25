@@ -25,7 +25,7 @@ class TenantController extends Controller
 
     public function index(Request $request): View
     {
-        $tenants = Tenant::query()->with(['domains', 'plan', 'subscription.plan'])->latest()->paginate(15);
+        $tenants = Tenant::query()->with(['domains', 'plan'])->latest()->paginate(15);
         $plans = Plan::query()->orderBy('name')->get();
 
         $editTenantId = (int) ($request->query('edit') ?? old('edit_tenant_id', 0));
@@ -58,6 +58,11 @@ class TenantController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Tenant provisioning runs migrations and initial account setup.
+        // Allow a higher per-request time budget to avoid 30s fatal timeout.
+        @set_time_limit(180);
+        @ini_set('max_execution_time', '180');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'plan_id' => ['nullable', 'exists:plans,id'],

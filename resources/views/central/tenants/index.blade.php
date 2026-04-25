@@ -152,7 +152,7 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         @foreach($tenants as $tenant)
                         @php
-                            $planName   = $tenant->subscription?->plan?->name ?? 'Free';
+                            $planName   = $tenant->plan?->name ?? ($tenant->subscription?->plan?->name ?? 'Free');
                             $planColors = [
                                 'basic'    => 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
                                 'standard' => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',

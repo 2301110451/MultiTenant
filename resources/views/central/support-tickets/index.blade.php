@@ -46,6 +46,36 @@
         @endif
 
         <div class="c-card overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">Recent Release Activities</h2>
+            </div>
+            <table class="w-full text-sm">
+                <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                    <th class="px-4 py-2.5 text-left">Date</th>
+                    <th class="px-4 py-2.5 text-left">Actor</th>
+                    <th class="px-4 py-2.5 text-left">Action</th>
+                    <th class="px-4 py-2.5 text-left">Record</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                @forelse($releaseActivities as $activity)
+                    <tr>
+                        <td class="px-4 py-2.5">{{ $activity->created_at?->format('M d, Y H:i') ?? '—' }}</td>
+                        <td class="px-4 py-2.5">{{ $activity->actor?->name ?? 'System' }}</td>
+                        <td class="px-4 py-2.5">{{ $activity->action }}</td>
+                        <td class="px-4 py-2.5">{{ $activity->version ?? $activity->message }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-4 py-2.5 text-slate-500">No release activity yet.</td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="c-card overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
