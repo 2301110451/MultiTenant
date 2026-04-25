@@ -21,11 +21,26 @@ class RoleManagementController extends Controller
     public function index(Request $request): View
     {
         $this->authorizeRoleAccess($request, 'viewAny');
-        $roles = Role::query()->with('permissions')->orderBy('name')->paginate(20);
+        $actor = $request->user('tenant');
+        $roles = Role::query()->with('permissions')->where('name', '!=', 'viewer')->orderBy('name')->paginate(20);
+        $permissions = Permission::query()->orderBy('name')->get();
+        $modal = (string) old('_modal_context', (string) $request->query('modal', ''));
+        $editRoleId = (int) old('_modal_target_id', (int) $request->query('role', 0));
+        $editRole = null;
+        if ($modal === 'edit-role' && $editRoleId > 0) {
+            $candidate = Role::query()->with('permissions')->find($editRoleId);
+            if ($candidate && Gate::forUser($actor)->allows('update', $candidate)) {
+                $editRole = $candidate;
+            }
+        }
+        $canCreate = Gate::forUser($actor)->allows('create', Role::class);
 
         return view('tenant.roles.index', [
             'roles' => $roles,
-            'permissions' => Permission::query()->orderBy('name')->get(),
+            'permissions' => $permissions,
+            'modal' => $modal,
+            'editRole' => $editRole,
+            'canCreate' => $canCreate,
         ]);
     }
 
@@ -103,7 +118,7 @@ class RoleManagementController extends Controller
     {
         $this->authorizeRoleAccess($request, 'delete', $role);
 
-        if (in_array($role->name, ['tenant_admin', 'staff', 'viewer', 'resident'], true)) {
+        if (in_array($role->name, ['tenant_admin', 'staff', 'resident'], true)) {
             return redirect()->route('tenant.roles.index')->with('status', 'Default roles cannot be deleted.');
         }
 

@@ -88,7 +88,7 @@ class User extends Authenticatable
 
     public function isViewer(): bool
     {
-        return $this->role === TenantRole::Viewer;
+        return false;
     }
 
     public function isResident(): bool

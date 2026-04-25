@@ -71,9 +71,6 @@ return new class extends Migration
                 'reservations.view', 'reservations.create', 'reservations.update',
                 'reports.view', 'users.view',
             ],
-            'viewer' => [
-                'facilities.view', 'reservations.view', 'reports.view',
-            ],
             'resident' => [
                 'facilities.view',
                 'reservations.view', 'reservations.create', 'reservations.update',

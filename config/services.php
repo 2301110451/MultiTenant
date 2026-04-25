@@ -67,4 +67,14 @@ return [
         'application_fee_amount' => env('STRIPE_APPLICATION_FEE_AMOUNT'), // smallest currency unit, e.g. cents
     ],
 
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+        'owner' => env('GITHUB_OWNER'),
+        'repo' => env('GITHUB_REPO'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
+        // TLS to https://api.github.com — Windows cURL error 60: set GITHUB_CAINFO (recommended) or local-only GITHUB_HTTP_SSL_VERIFY=false
+        'ca_bundle' => env('GITHUB_CAINFO', ''),
+        'http_ssl_verify' => filter_var(env('GITHUB_HTTP_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
+    ],
+
 ];

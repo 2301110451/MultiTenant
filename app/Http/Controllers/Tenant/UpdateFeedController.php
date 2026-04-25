@@ -18,7 +18,7 @@ class UpdateFeedController extends Controller
 
         $systemUpdates = UpdateAnnouncement::query()
             ->where('is_active', true)
-            ->where('audience', 'all')
+            ->whereIn('audience', ['all', 'selected'])
             ->where(function ($query) use ($tenant) {
                 $tenantId = (int) ($tenant?->id ?? 0);
                 $query->whereNull('targeted_tenant_ids');

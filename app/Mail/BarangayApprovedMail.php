@@ -16,6 +16,10 @@ class BarangayApprovedMail extends Mailable
         public string $barangayName,
         public string $domain,
         public string $portalUrl,
+        public ?string $tenantAdminEmail = null,
+        public ?string $tenantAdminPassword = null,
+        public ?string $staffEmail = null,
+        public ?string $staffPassword = null,
     ) {}
 
     public function envelope(): Envelope

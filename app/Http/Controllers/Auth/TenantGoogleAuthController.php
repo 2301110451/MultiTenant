@@ -214,7 +214,7 @@ class TenantGoogleAuthController extends Controller
     }
 
     /**
-     * Existing barangay accounts keep their role (admin, staff, viewer, resident). New Google sign-ups become residents.
+     * Existing barangay accounts keep their role (admin, staff, resident). New Google sign-ups become residents.
      */
     private function findOrCreateTenantUserFromGoogle(string $email, ?string $googleName): User
     {

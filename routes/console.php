@@ -2,12 +2,21 @@
 
 use App\Models\SystemVersion;
 use App\Models\Tenant;
+use App\Models\UpdateEvent;
+use App\Jobs\AnalyzeUpdateEventJob;
+use App\Services\GitHubService;
+use App\Services\DeploymentSnapshotService;
+use App\Services\DeploymentUpdateIngestionService;
+use App\Services\SafeRollbackService;
+use App\Models\DeploymentRun;
+use App\Models\DeploymentSnapshot;
 use App\Support\TenantGoogleOAuthRedirectUri;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Schema;
 
 Artisan::command('inspire', function () {
@@ -193,3 +202,245 @@ Artisan::command('system:sync-tenant-migrations', function () {
 
     return self::SUCCESS;
 })->purpose('Run and verify tenant migrations for all tenants');
+
+Artisan::command('audit:backfill-tenant-activity', function () {
+    $this->warn('Backfilling tenant audit_logs into central tenant_activity_audit_logs...');
+
+    $totalImported = 0;
+    $totalSkipped = 0;
+    $originalTenantDb = (string) config('database.connections.tenant.database');
+
+    $tenants = Tenant::query()->orderBy('id')->get(['id', 'name', 'database']);
+
+    foreach ($tenants as $tenant) {
+        try {
+            $tenant->configureTenantConnection();
+
+            if (! Schema::connection('tenant')->hasTable('audit_logs')) {
+                $this->line("Skipped tenant #{$tenant->id} {$tenant->name} (audit_logs table not found).");
+                continue;
+            }
+
+            $userSnapshot = [];
+            if (Schema::connection('tenant')->hasTable('users')) {
+                $userSnapshot = DB::connection('tenant')
+                    ->table('users')
+                    ->select(['id', 'name', 'email'])
+                    ->get()
+                    ->keyBy('id')
+                    ->all();
+            }
+
+            DB::connection('tenant')
+                ->table('audit_logs')
+                ->orderBy('id')
+                ->chunkById(500, function ($logs) use ($tenant, $userSnapshot, &$totalImported, &$totalSkipped): void {
+                    foreach ($logs as $log) {
+                        $eventKey = (string) ($log->action ?? 'general.performed');
+                        $parts = explode('.', $eventKey, 2);
+                        $module = $parts[0] ?? 'general';
+                        $action = $parts[1] ?? $eventKey;
+
+                        $existing = DB::connection('mysql')
+                            ->table('tenant_activity_audit_logs')
+                            ->where('tenant_id', (int) $tenant->id)
+                            ->where('event_key', $eventKey)
+                            ->where('actor_user_id', $log->actor_user_id)
+                            ->where('target_type', $log->target_type)
+                            ->where('target_id', $log->target_id)
+                            ->where('created_at', $log->created_at)
+                            ->exists();
+
+                        if ($existing) {
+                            $totalSkipped++;
+                            continue;
+                        }
+
+                        $metadata = null;
+                        if (isset($log->metadata) && $log->metadata !== null && $log->metadata !== '') {
+                            $decoded = json_decode((string) $log->metadata, true);
+                            $metadata = is_array($decoded) ? $decoded : null;
+                        }
+
+                        $actor = null;
+                        if ($log->actor_user_id !== null && isset($userSnapshot[$log->actor_user_id])) {
+                            $actor = $userSnapshot[$log->actor_user_id];
+                        }
+
+                        DB::connection('mysql')->table('tenant_activity_audit_logs')->insert([
+                            'tenant_id' => (int) $tenant->id,
+                            'actor_type' => $log->actor_user_id ? 'tenant_user' : 'system',
+                            'actor_user_id' => $log->actor_user_id,
+                            'actor_name' => $actor->name ?? null,
+                            'actor_email' => $actor->email ?? null,
+                            'module' => $module,
+                            'action' => $action,
+                            'event_key' => $eventKey,
+                            'status' => 'success',
+                            'target_type' => $log->target_type,
+                            'target_id' => $log->target_id,
+                            'target_label' => is_array($metadata) ? ($metadata['target_label'] ?? null) : null,
+                            'before_values' => is_array($metadata) ? ($metadata['before_values'] ?? $metadata['before'] ?? $metadata['old_values'] ?? null) : null,
+                            'after_values' => is_array($metadata) ? ($metadata['after_values'] ?? $metadata['after'] ?? $metadata['new_values'] ?? null) : null,
+                            'metadata' => is_array($metadata) ? json_encode($metadata, JSON_UNESCAPED_SLASHES) : null,
+                            'ip_address' => $log->ip_address,
+                            'user_agent' => $log->user_agent,
+                            'created_at' => $log->created_at,
+                            'updated_at' => $log->updated_at ?? $log->created_at,
+                        ]);
+
+                        $totalImported++;
+                    }
+                });
+
+            $this->line("Processed tenant #{$tenant->id} {$tenant->name}");
+        } catch (Throwable $e) {
+            report($e);
+            $this->error("Failed tenant #{$tenant->id} {$tenant->name}: {$e->getMessage()}");
+        }
+    }
+
+    config(['database.connections.tenant.database' => $originalTenantDb]);
+    DB::purge('tenant');
+
+    $this->info("Backfill done. Imported: {$totalImported}; Skipped (duplicates): {$totalSkipped}");
+
+    return self::SUCCESS;
+})->purpose('Backfill tenant audit_logs into central tenant_activity_audit_logs');
+
+Artisan::command('deployments:poll-github-updates', function (DeploymentUpdateIngestionService $ingestionService) {
+    if (! Schema::connection('mysql')->hasTable('update_events')) {
+        $this->error('Missing table: update_events. Run php artisan migrate first.');
+
+        return self::FAILURE;
+    }
+
+    $this->warn('Polling GitHub releases as webhook fallback...');
+    $created = $ingestionService->pollRecentReleases();
+
+    $this->info("Polling finished. New normalized update events: {$created}");
+
+    return self::SUCCESS;
+})->purpose('Fallback polling: import GitHub releases into update events');
+
+Artisan::command('deployments:poll-github-commits', function (DeploymentUpdateIngestionService $ingestionService) {
+    if (! Schema::connection('mysql')->hasTable('update_events')) {
+        $this->error('Missing table: update_events. Run php artisan migrate first.');
+
+        return self::FAILURE;
+    }
+
+    $this->warn('Polling latest commit from GitHub as webhook fallback...');
+    $created = $ingestionService->pollLatestCommit();
+
+    if ($created > 0) {
+        $this->info('Created update event from latest commit.');
+    } else {
+        $this->info('No new commit event created (already imported or unavailable).');
+    }
+
+    return self::SUCCESS;
+})->purpose('Fallback polling: import latest commit and changed files into update events');
+
+Artisan::command('deployments:create-snapshot
+    {version : Semantic version label for immutable snapshot}
+    {--artifact-digest= : Artifact digest (sha256:...)}
+    {--artifact-uri= : Artifact storage URI}
+    {--code-ref= : Commit SHA/tag}
+    {--lockfile-hash= : Dependency lockfile hash}
+    {--config-hash= : Environment/config hash}', function (DeploymentSnapshotService $snapshotService) {
+    $version = trim((string) $this->argument('version'));
+    if ($version === '') {
+        $this->error('Version is required.');
+
+        return self::FAILURE;
+    }
+
+    $snapshot = $snapshotService->createSnapshot(
+        $version,
+        null,
+        $this->option('artifact-digest'),
+        $this->option('artifact-uri'),
+        $this->option('code-ref'),
+        $this->option('lockfile-hash'),
+        $this->option('config-hash'),
+        ['source' => 'artisan']
+    );
+
+    $this->info("Snapshot created: #{$snapshot->id} ({$snapshot->version})");
+
+    return self::SUCCESS;
+})->purpose('Create immutable deployment snapshot metadata');
+
+Artisan::command('deployments:monitor-health {run_id : Deployment run id} {--error-rate=0} {--p95=0}', function (
+    int $runId,
+    SafeRollbackService $rollbackService
+) {
+    $run = DeploymentRun::query()->find($runId);
+    if (! $run instanceof DeploymentRun) {
+        $this->error('Deployment run not found.');
+
+        return self::FAILURE;
+    }
+
+    $errorRate = (float) $this->option('error-rate');
+    $p95 = (int) $this->option('p95');
+
+    $maxErrorRate = (float) config('deployments.auto_rollback.max_error_rate_percent', 5);
+    $maxP95 = (int) config('deployments.auto_rollback.max_p95_latency_ms', 1500);
+
+    $run->forceFill([
+        'health_metrics' => [
+            'error_rate_percent' => $errorRate,
+            'p95_latency_ms' => $p95,
+        ],
+    ])->save();
+
+    $shouldRollback = (bool) config('deployments.auto_rollback.enabled', true)
+        && ($errorRate > $maxErrorRate || $p95 > $maxP95);
+
+    if (! $shouldRollback) {
+        $this->info('Health is within thresholds. No rollback triggered.');
+
+        return self::SUCCESS;
+    }
+
+    try {
+        $rollback = $rollbackService->autoRollback(
+            $run,
+            "Auto rollback due to health breach: error_rate={$errorRate}, p95={$p95}"
+        );
+    } catch (Throwable $e) {
+        $this->error($e->getMessage());
+
+        return self::FAILURE;
+    }
+
+    $this->warn("Automatic rollback completed: #{$rollback->id}");
+
+    return self::SUCCESS;
+})->purpose('Evaluate health metrics and trigger automatic rollback if thresholds are breached');
+
+Artisan::command('deployments:mark-snapshot-stable {snapshot_id : Snapshot id}', function (int $snapshotId) {
+    $snapshot = DeploymentSnapshot::query()->find($snapshotId);
+    if (! $snapshot instanceof DeploymentSnapshot) {
+        $this->error('Snapshot not found.');
+
+        return self::FAILURE;
+    }
+
+    DeploymentSnapshot::query()->where('is_stable', true)->update(['is_stable' => false]);
+    $snapshot->forceFill(['is_stable' => true])->save();
+
+    $this->info("Snapshot {$snapshot->version} is now the stable rollback target.");
+
+    return self::SUCCESS;
+})->purpose('Mark a snapshot as stable rollback target');
+
+Schedule::command('deployments:poll-github-commits')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('deployments:poll-github-updates')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

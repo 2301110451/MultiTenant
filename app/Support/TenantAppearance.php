@@ -9,6 +9,35 @@ use Throwable;
 
 final class TenantAppearance
 {
+    /** Canonical default accent — Blue-600, WCAG AA on white (4.5:1). */
+    public const DEFAULT_ACCENT  = '#2563EB';
+
+    /** Canonical default sidebar background. */
+    public const DEFAULT_SIDEBAR = '#0F172A';
+
+    /** Canonical default page background. */
+    public const DEFAULT_BG      = '#F8FAFC';
+
+    /**
+     * Returns the canonical CSS variable map for the default theme.
+     * This is the single source of truth for “what does a new tenant look like”.
+     *
+     * @return array<string, string>
+     */
+    public static function defaultThemeTokens(): array
+    {
+        return [
+            '--tenant-accent'           => self::DEFAULT_ACCENT,
+            '--tenant-accent-soft'      => 'rgba(37, 99, 235, 0.07)',
+            '--tenant-accent-border'    => 'rgba(37, 99, 235, 0.17)',
+            '--tenant-nav-active-start' => '#1D4ED8',
+            '--tenant-nav-active-end'   => self::DEFAULT_ACCENT,
+            '--tenant-nav-shadow'       => 'rgba(37, 99, 235, 0.28)',
+            '--bg-sidebar'              => self::DEFAULT_SIDEBAR,
+            '--bg-primary'              => self::DEFAULT_BG,
+        ];
+    }
+
     /**
      * Tailwind class sets keyed by subscription plan slug.
      *
@@ -31,21 +60,21 @@ final class TenantAppearance
 
         $theme = match ($slug) {
             'premium' => [
-                'slug' => 'premium',
-                'label' => $plan?->name ?? 'Premium',
-                'sidebar' => 'bg-slate-900',
-                'sidebarBorder' => 'border-slate-800',
-                'brandIcon' => 'bg-amber-500 shadow-amber-900/50',
-                'brandSub' => 'text-amber-400',
-                'navActive' => 'bg-amber-500 text-white shadow shadow-amber-900/40',
-                'navIdle' => 'text-slate-400 hover:text-white hover:bg-slate-800',
-                'breadcrumbAccent' => 'text-amber-600',
-                'avatar' => 'bg-amber-500',
-                'heroGradient' => 'from-slate-900 via-amber-950 to-slate-900',
-                'heroAccent' => 'text-amber-400',
-                'button' => 't-btn-primary',
-                'panelRing' => 'ring-amber-500/20',
-                'badge' => 'bg-amber-400/20 text-amber-300 border-amber-500/30',
+                'slug'            => 'premium',
+                'label'           => $plan?->name ?? 'Premium',
+                'sidebar'         => 'bg-slate-900',
+                'sidebarBorder'   => 'border-slate-800',
+                'brandIcon'       => 'bg-gradient-to-br from-yellow-500 to-yellow-700 shadow-yellow-900/50',
+                'brandSub'        => 'text-yellow-400',
+                'navActive'       => 'bg-gradient-to-r from-yellow-700 to-yellow-500 text-white shadow shadow-yellow-900/40',
+                'navIdle'         => 'text-slate-400 hover:text-white hover:bg-slate-800',
+                'breadcrumbAccent' => 'text-yellow-600',
+                'avatar'          => 'bg-yellow-600',
+                'heroGradient'    => 'from-slate-900 via-yellow-950 to-slate-900',
+                'heroAccent'      => 'text-yellow-400',
+                'button'          => 't-btn-primary',
+                'panelRing'       => 'ring-yellow-500/20',
+                'badge'           => 'bg-yellow-400/20 text-yellow-700 border-yellow-500/30',
             ],
             'standard' => [
                 'slug' => 'standard',

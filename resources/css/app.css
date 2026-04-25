@@ -38,12 +38,12 @@
         0 8px 16px -4px  rgb(15 23 42 / 0.08);
 
     /* ── Tenant accent tokens (plan-patched at runtime) ───────── */
-    --tenant-accent:            #3181E5;
-    --tenant-accent-soft:       rgba(49, 129, 229, 0.07);
-    --tenant-accent-border:     rgba(49, 129, 229, 0.17);
-    --tenant-nav-active-start:  #2563eb;
-    --tenant-nav-active-end:    #3181E5;
-    --tenant-nav-shadow:        rgba(49, 129, 229, 0.28);
+    --tenant-accent:            #2563EB;
+    --tenant-accent-soft:       rgba(37, 99, 235, 0.07);
+    --tenant-accent-border:     rgba(37, 99, 235, 0.17);
+    --tenant-nav-active-start:  #1D4ED8;
+    --tenant-nav-active-end:    #2563EB;
+    --tenant-nav-shadow:        rgba(37, 99, 235, 0.28);
 
     /* ── Super Admin accent tokens ──────────────────────────── */
     --central-accent:          #6366F1;
@@ -53,14 +53,44 @@
 
     /* ── Transition timing ──────────────────────────────────── */
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ── Typography scale ───────────────────────────────────── */
+    --text-xs:   0.75rem;    --lh-xs:   1rem;
+    --text-sm:   0.875rem;   --lh-sm:   1.375rem;
+    --text-base: 1rem;       --lh-base: 1.625rem;
+    --text-md:   1.0625rem;  --lh-md:   1.625rem;
+    --text-lg:   1.125rem;   --lh-lg:   1.5rem;
+    --text-xl:   1.25rem;    --lh-xl:   1.625rem;
+    --text-2xl:  1.5rem;     --lh-2xl:  2rem;
+    --text-3xl:  1.875rem;   --lh-3xl:  2.25rem;
+
+    /* ── Font weights ───────────────────────────────────────── */
+    --fw-normal:    400;
+    --fw-medium:    500;
+    --fw-semibold:  600;
+    --fw-bold:      700;
+    --fw-extrabold: 800;
+
+    /* ── Semantic text colors ───────────────────────────────── */
+    --text-heading:  #0F172A;
+    --text-body:     #334155;
+    --text-muted:    #64748B;
+    --text-disabled: #94A3B8;
+    --text-inverse:  #F8FAFC;
+
+    /* ── Semantic status colors ─────────────────────────────── */
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error:   #DC2626;
+    --color-info:    #2563EB;
 }
 
 /* ── Dark mode token overrides ──────────────────────────────────── */
 .dark {
-    --bg-primary:      #080d18;
-    --bg-secondary:    #0f172a;
+    --bg-primary:      #080D18;
+    --bg-secondary:    #0F172A;
     --bg-surface:      #111827;
-    --bg-elevated:     #1a2640;
+    --bg-elevated:     #1A2640;
     --bg-accent-soft:  rgba(99, 102, 241, 0.08);
 
     --bg-sidebar:       #050a12;
@@ -93,12 +123,12 @@
    TENANT PLAN ACCENT OVERRIDES
    ══════════════════════════════════════════════════════════════════ */
 .plan-basic {
-    --tenant-accent:            #3181E5;
-    --tenant-accent-soft:       rgba(49, 129, 229, 0.07);
-    --tenant-accent-border:     rgba(49, 129, 229, 0.17);
-    --tenant-nav-active-start:  #2563eb;
-    --tenant-nav-active-end:    #3181E5;
-    --tenant-nav-shadow:        rgba(49, 129, 229, 0.28);
+    --tenant-accent:            #2563EB;
+    --tenant-accent-soft:       rgba(37, 99, 235, 0.07);
+    --tenant-accent-border:     rgba(37, 99, 235, 0.17);
+    --tenant-nav-active-start:  #1D4ED8;
+    --tenant-nav-active-end:    #2563EB;
+    --tenant-nav-shadow:        rgba(37, 99, 235, 0.28);
 }
 
 .plan-standard {
@@ -111,12 +141,12 @@
 }
 
 .plan-premium {
-    --tenant-accent:            #d97706;
-    --tenant-accent-soft:       rgba(217, 119, 6, 0.07);
-    --tenant-accent-border:     rgba(217, 119, 6, 0.17);
-    --tenant-nav-active-start:  #b45309;
-    --tenant-nav-active-end:    #d97706;
-    --tenant-nav-shadow:        rgba(217, 119, 6, 0.28);
+    --tenant-accent:            #CA8A04;
+    --tenant-accent-soft:       rgba(202, 138, 4, 0.07);
+    --tenant-accent-border:     rgba(202, 138, 4, 0.17);
+    --tenant-nav-active-start:  #A16207;
+    --tenant-nav-active-end:    #CA8A04;
+    --tenant-nav-shadow:        rgba(202, 138, 4, 0.30);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -225,11 +255,23 @@
 
     /* ── Button system ─────────────────────────────────────────── */
     .btn-primary {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5
-               text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 ease-in-out
-               hover:bg-indigo-700 hover:shadow-indigo-500/30 hover:-translate-y-0.5
-               focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:ring-offset-2
-               active:translate-y-0 active:shadow-sm;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5
+               text-sm font-semibold text-white transition-all duration-200 ease-in-out
+               hover:-translate-y-px
+               focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:ring-offset-2
+               active:translate-y-0;
+        background: linear-gradient(160deg, #2563EB 0%, #1D4ED8 100%);
+        box-shadow:
+            0 1px 2px rgba(37, 99, 235, 0.20),
+            0 4px 14px -3px rgba(37, 99, 235, 0.30),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+    .btn-primary:hover {
+        background: linear-gradient(160deg, #1D4ED8 0%, #1E40AF 100%);
+        box-shadow:
+            0 2px 4px rgba(37, 99, 235, 0.25),
+            0 8px 22px -4px rgba(37, 99, 235, 0.38),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
     }
 
     .btn-secondary {
@@ -246,11 +288,23 @@
     }
 
     .btn-danger {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5
-               text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all duration-200 ease-in-out
-               hover:bg-red-700 hover:shadow-red-500/30 hover:-translate-y-0.5
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5
+               text-sm font-semibold text-white transition-all duration-200 ease-in-out
+               hover:-translate-y-px
                focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2
-               active:translate-y-0 active:shadow-sm;
+               active:translate-y-0;
+        background: linear-gradient(160deg, #DC2626 0%, #B91C1C 100%);
+        box-shadow:
+            0 1px 2px rgba(220, 38, 38, 0.20),
+            0 4px 14px -3px rgba(220, 38, 38, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    }
+    .btn-danger:hover {
+        background: linear-gradient(160deg, #B91C1C 0%, #991B1B 100%);
+        box-shadow:
+            0 2px 4px rgba(220, 38, 38, 0.25),
+            0 8px 20px -4px rgba(220, 38, 38, 0.32),
+            inset 0 1px 0 rgba(255, 255, 255, 0.10);
     }
 
     .btn-ghost {
@@ -667,6 +721,102 @@ body.tenant-auth-recaptcha .grecaptcha-badge {
     pointer-events: none !important;
 }
 
+/* Interactive inline disclosure badge (expands on hover/focus). */
+.recaptcha-hover-dock {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 90;
+}
+
+.recaptcha-hover-badge {
+    display: inline-flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 72px;
+    height: 56px;
+    overflow: hidden;
+    border-radius: 2px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
+    transition: width 0.22s ease, box-shadow 0.22s ease;
+}
+
+.recaptcha-hover-logo {
+    width: 72px;
+    min-width: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+}
+
+.recaptcha-hover-content {
+    width: 254px;
+    min-width: 254px;
+    background: #1a73e8;
+    color: #fff;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    opacity: 0;
+    transform: translateX(6px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.22s ease;
+}
+
+.recaptcha-hover-title {
+    margin: 0;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.recaptcha-hover-links {
+    margin: 0;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recaptcha-hover-links a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.recaptcha-hover-links a:hover,
+.recaptcha-hover-links a:focus-visible {
+    text-decoration: underline;
+}
+
+.recaptcha-hover-badge:hover,
+.recaptcha-hover-badge:focus-within {
+    width: 308px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 24%);
+}
+
+.recaptcha-hover-badge:hover .recaptcha-hover-content,
+.recaptcha-hover-badge:focus-within .recaptcha-hover-content {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+    .recaptcha-hover-dock {
+        right: 16px;
+        bottom: 16px;
+    }
+}
+
 /* ── Theme transition — smooth color changes ────────── */
 .theme-transitioning,
 .theme-transitioning *,
@@ -701,3 +851,131 @@ body.tenant-auth-recaptcha .grecaptcha-badge {
 .icon-container-sm { @apply w-9 h-9; }
 .icon-container-md { @apply w-11 h-11; }
 .icon-container-lg { @apply w-14 h-14; }
+
+/* ══════════════════════════════════════════════════════════════════
+   PREMIUM DATA TABLE
+   Crisp, scannable table with refined hover and header styling.
+   ══════════════════════════════════════════════════════════════════ */
+.data-table {
+    @apply w-full text-sm;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.data-table thead tr {
+    background-color: var(--bg-secondary);
+}
+.data-table thead th {
+    @apply text-left text-xs font-semibold uppercase tracking-wider px-5 py-3.5;
+    color: var(--text-muted, #64748B);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.data-table tbody tr {
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 0.12s ease;
+}
+.data-table tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.025);
+}
+.dark .data-table tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.06);
+}
+.data-table tbody td {
+    @apply px-5 py-3.5;
+    color: var(--text-body, #334155);
+}
+.dark .data-table tbody td {
+    color: #CBD5E1;
+}
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FORM SECTION
+   Groups related form fields with consistent card chrome.
+   ══════════════════════════════════════════════════════════════════ */
+.form-section {
+    @apply rounded-2xl border p-6 space-y-5;
+    background-color: var(--bg-surface);
+    border-color: var(--border-subtle);
+    box-shadow: var(--shadow-card);
+}
+.form-section-title {
+    @apply text-sm font-semibold pb-4 border-b;
+    color: var(--text-heading, #0F172A);
+    border-color: var(--border-subtle);
+}
+.dark .form-section-title {
+    color: #F1F5F9;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TAG / CHIP
+   Neutral pill for labels, categories, metadata.
+   ══════════════════════════════════════════════════════════════════ */
+.tag {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium border;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-subtle);
+    color: var(--text-muted, #64748B);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PAGE HEADER
+   Consistent page-level title + description block.
+   ══════════════════════════════════════════════════════════════════ */
+.page-header {
+    @apply px-6 pt-8 pb-6 sm:px-10 border-b;
+    border-color: var(--border-subtle);
+}
+.page-header h1,
+.page-header .page-title {
+    @apply text-2xl font-bold tracking-tight;
+    color: var(--text-heading, #0F172A);
+}
+.dark .page-header h1,
+.dark .page-header .page-title {
+    color: #F1F5F9;
+}
+.page-header p,
+.page-header .page-description {
+    @apply mt-1.5 text-sm leading-relaxed;
+    color: var(--text-muted, #64748B);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   EMPTY STATE
+   Centered placeholder for empty lists/tables.
+   ══════════════════════════════════════════════════════════════════ */
+.empty-state {
+    @apply flex flex-col items-center justify-center py-16 px-8 text-center;
+}
+.empty-state-icon {
+    @apply w-14 h-14 rounded-2xl flex items-center justify-center mb-5;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+}
+.empty-state h3 {
+    @apply text-sm font-semibold mb-2;
+    color: var(--text-heading, #0F172A);
+}
+.dark .empty-state h3 { color: #F1F5F9; }
+.empty-state p {
+    @apply text-sm max-w-xs leading-relaxed;
+    color: var(--text-muted, #64748B);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PREMIUM PLAN OVERRIDES — TenantAppearance keys (PHP-side)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Gold accent for premium plan brand icon */
+.plan-premium .brand-icon-bg {
+    background: linear-gradient(135deg, #CA8A04, #A16207);
+}
+
+/* Plan-premium navActive override via CSS (fallback for non-custom-accent tenants) */
+.plan-premium .nav-active {
+    background: linear-gradient(90deg, #A16207 0%, #CA8A04 100%);
+    box-shadow: 0 4px 14px rgba(202, 138, 4, 0.32);
+}

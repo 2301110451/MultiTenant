@@ -9,7 +9,6 @@ return new class extends Migration
      * Staff could see Settings in the sidebar (canManageTenant) but lacked RBAC
      * permissions, causing 403. Grant settings here for every existing tenant DB.
      *
-     * Viewers get settings.view only so they can review portal appearance read-only.
      */
     public function up(): void
     {
@@ -17,7 +16,6 @@ return new class extends Migration
 
         $attach = [
             'staff' => ['settings.view', 'settings.update'],
-            'viewer' => ['settings.view'],
         ];
 
         foreach ($attach as $roleName => $permissionNames) {
@@ -54,7 +52,6 @@ return new class extends Migration
         $rows = [
             ['staff', 'settings.view'],
             ['staff', 'settings.update'],
-            ['viewer', 'settings.view'],
         ];
 
         foreach ($rows as [$roleName, $permissionName]) {

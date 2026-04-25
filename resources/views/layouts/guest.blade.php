@@ -26,5 +26,6 @@
                 {{ $slot }}
             </div>
         </div>
+        <x-recaptcha-disclosure />
     </body>
 </html>

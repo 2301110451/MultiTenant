@@ -70,6 +70,7 @@
         <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-3" :class="sidebarCollapsed ? 'text-center px-0' : 'px-3'" x-text="sidebarCollapsed ? '•' : 'Main'"></p>
 
         @php
+            $isSuperAdmin = (bool) auth('web')->user()?->isSuperAdmin();
             $navItems = [
                 ['route' => 'dashboard',              'label' => 'Dashboard',   'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
                 ['route' => 'central.tenants.index', 'label' => 'Barangays',   'icon' => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'],
@@ -80,6 +81,13 @@
                 ['route' => 'central.update-announcements.index',   'label' => 'Updates',       'icon' => 'M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z'],
                 ['route' => 'central.system-versions.index',   'label' => 'Versions',       'icon' => 'M11.25 3.75h1.5m-6 0h.008v.008H5.25V3.75zm13.5 0h.008v.008h-.008V3.75zM3.75 7.5h16.5v12.75H3.75V7.5z'],
             ];
+
+            if ($isSuperAdmin) {
+                $navItems[] = ['route' => 'central.audit-logs.index', 'label' => 'Audit logs', 'icon' => 'M9 12h6m-6 4h3m1.5-10.5l4.5 4.5m-10.5-4.5h3.75a1.5 1.5 0 011.5 1.5V7.5a1.5 1.5 0 001.5 1.5h.75a1.5 1.5 0 011.5 1.5v7.5a1.5 1.5 0 01-1.5 1.5h-9a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5z'];
+                $navItems[] = ['route' => 'central.global-updates.candidates.index', 'match' => 'central.global-updates.candidates.index', 'label' => 'Deployments', 'icon' => 'M4.5 12.75l6 6 9-13.5M4.5 7.5h15'];
+                $navItems[] = ['route' => 'central.global-updates.candidates.rejected', 'match' => 'central.global-updates.candidates.rejected', 'label' => 'Rejected Deployments', 'icon' => 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0z'];
+            }
+
         @endphp
 
         @foreach($navItems as $item)
@@ -279,6 +287,7 @@
     </footer>
 </div>
 
+<x-recaptcha-disclosure force />
 @stack('scripts')
 </body>
 </html>

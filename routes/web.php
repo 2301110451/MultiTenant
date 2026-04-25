@@ -9,6 +9,10 @@ use App\Http\Controllers\Central\PlanController;
 use App\Http\Controllers\Central\RealtimeController as CentralRealtimeController;
 use App\Http\Controllers\Central\SubscriptionIntentReviewController;
 use App\Http\Controllers\Central\SupportTicketController as CentralSupportTicketController;
+use App\Http\Controllers\Central\TenantActivityAuditLogController;
+use App\Http\Controllers\Central\DeploymentCandidateController;
+use App\Http\Controllers\Central\DeploymentRunController;
+use App\Http\Controllers\Central\GlobalUpdateController;
 use App\Http\Controllers\Central\SystemVersionController;
 use App\Http\Controllers\Central\TenantApplicationController;
 use App\Http\Controllers\Central\TenantApplicationReviewController;
@@ -84,6 +88,9 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::put('support-tickets/{supportTicket}', [CentralSupportTicketController::class, 'update'])->name('support-tickets.update');
         Route::get('system-versions', [SystemVersionController::class, 'index'])->name('system-versions.index');
         Route::post('system-versions', [SystemVersionController::class, 'store'])->name('system-versions.store');
+        Route::get('audit-logs', [TenantActivityAuditLogController::class, 'index'])
+            ->middleware('super.admin')
+            ->name('audit-logs.index');
         Route::get('update-announcements', [UpdateAnnouncementController::class, 'index'])->name('update-announcements.index');
         Route::post('update-announcements', [UpdateAnnouncementController::class, 'store'])->name('update-announcements.store');
         Route::get('tenant-applications', [TenantApplicationReviewController::class, 'index'])->name('tenant-applications.index');
@@ -97,6 +104,22 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::get('realtime/tenants', [CentralRealtimeController::class, 'tenants'])->name('realtime.tenants');
         Route::get('realtime/subscription-intents', [CentralRealtimeController::class, 'subscriptionIntents'])->name('realtime.subscription-intents');
         Route::get('realtime/support-tickets', [CentralRealtimeController::class, 'supportTickets'])->name('realtime.support-tickets');
+        Route::get('realtime/deployment-candidates', [CentralRealtimeController::class, 'deploymentCandidates'])->name('realtime.deployment-candidates');
+    });
+
+    Route::middleware([EnsureCentralHost::class, 'auth:web', 'super.admin'])->prefix('central/global-updates')->name('central.global-updates.')->group(function () {
+        Route::get('/', [GlobalUpdateController::class, 'index'])->name('index');
+        Route::post('/publish', [GlobalUpdateController::class, 'publish'])->name('publish');
+        Route::post('/sync', [GlobalUpdateController::class, 'sync'])->name('sync');
+        Route::get('/candidates', [DeploymentCandidateController::class, 'index'])->name('candidates.index');
+        Route::get('/candidates/rejected', [DeploymentCandidateController::class, 'rejectedIndex'])->name('candidates.rejected');
+        Route::post('/candidates/{candidate}/approve', [DeploymentCandidateController::class, 'approve'])->name('candidates.approve');
+        Route::post('/candidates/{candidate}/reject', [DeploymentCandidateController::class, 'reject'])->name('candidates.reject');
+        Route::post('/candidates/{candidate}/restore', [DeploymentCandidateController::class, 'restoreToCandidates'])->name('candidates.restore');
+        Route::post('/candidates/{candidate}/validate', [DeploymentRunController::class, 'requestValidation'])->name('candidates.validate');
+        Route::post('/runs/{run}/mark-validated', [DeploymentRunController::class, 'markValidated'])->name('runs.mark-validated');
+        Route::post('/runs/{run}/deploy', [DeploymentRunController::class, 'deploy'])->name('runs.deploy');
+        Route::post('/runs/{run}/undo', [DeploymentRunController::class, 'undo'])->name('runs.undo');
     });
 
     Route::middleware([EnsureTenantHost::class, 'auth:tenant'])->prefix('tenant')->name('tenant.')->group(function () {

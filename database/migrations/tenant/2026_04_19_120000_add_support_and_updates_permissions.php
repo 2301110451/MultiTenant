@@ -25,7 +25,7 @@ return new class extends Migration
             ]);
         }
 
-        $roleNames = ['tenant_admin', 'staff', 'viewer', 'resident'];
+        $roleNames = ['tenant_admin', 'staff', 'resident'];
         foreach ($roleNames as $roleName) {
             $roleId = DB::connection('tenant')->table('roles')->where('name', $roleName)->value('id');
             if ($roleId === null) {

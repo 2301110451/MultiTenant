@@ -335,6 +335,7 @@
     </footer>
 </div>
 
+<x-recaptcha-disclosure force />
 @stack('scripts')
 </body>
 </html>

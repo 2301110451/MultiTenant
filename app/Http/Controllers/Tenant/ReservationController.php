@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\ReservationService;
+use App\Services\TenantAuditLogger;
 use App\Support\Pricing;
 use App\Support\Tenancy;
 use Carbon\Carbon;
@@ -23,21 +24,51 @@ class ReservationController extends Controller
 {
     public function __construct(
         private ReservationService $reservations,
+        private TenantAuditLogger $audit,
     ) {}
 
     public function index(Request $request): View
     {
-        Gate::forUser($request->user('tenant'))->authorize('viewAny', Reservation::class);
+        $actor = $request->user('tenant');
+        Gate::forUser($actor)->authorize('viewAny', Reservation::class);
 
         $query = Reservation::query()->with(['facility', 'user'])->latest();
 
-        if ($request->user('tenant')->isResident()) {
-            $query->where('user_id', $request->user('tenant')->id);
+        if ($actor->isResident()) {
+            $query->where('user_id', $actor->id);
         }
 
         $reservations = $query->paginate(20);
 
-        return view('tenant.reservations.index', compact('reservations'));
+        $canCreate = Gate::forUser($actor)->allows('create', Reservation::class);
+        $modal = (string) old('_modal_context', (string) $request->query('modal', ''));
+        $facilities = collect();
+        $supportsIntegratedPayments = false;
+        $preselectFacilityId = null;
+
+        if ($canCreate) {
+            $tenant = Tenancy::currentTenant();
+            $plan = $tenant?->subscription?->plan ?? $tenant?->plan;
+            $supportsIntegratedPayments = (bool) ($plan && Pricing::allows('integrated_payments', $plan));
+            $facilities = Facility::query()->where('is_active', true)->orderBy('name')->get();
+
+            $rawPre = old('facility_id', $request->query('facility_id'));
+            if ($rawPre !== null && $rawPre !== '') {
+                $candidate = (int) $rawPre;
+                if ($candidate > 0 && $facilities->firstWhere('id', $candidate)) {
+                    $preselectFacilityId = $candidate;
+                }
+            }
+        }
+
+        return view('tenant.reservations.index', compact(
+            'reservations',
+            'canCreate',
+            'modal',
+            'facilities',
+            'supportsIntegratedPayments',
+            'preselectFacilityId'
+        ));
     }
 
     public function create(Request $request): View
@@ -96,7 +127,7 @@ class ReservationController extends Controller
         $supportsIntegratedPayments = $plan && Pricing::allows('integrated_payments', $plan);
         $paymentOption = $supportsIntegratedPayments ? ($data['payment_option'] ?? null) : null;
 
-        Reservation::query()->create([
+        $reservation = Reservation::query()->create([
             'user_id' => $request->user('tenant')->id,
             'facility_id' => $data['facility_id'],
             'starts_at' => $startsAt,
@@ -106,6 +137,23 @@ class ReservationController extends Controller
             'payment_option' => $paymentOption,
             'is_special_request' => (bool) ($data['is_special_request'] ?? false),
             'qr_token' => $qr,
+        ]);
+
+        $reservation->loadMissing(['facility', 'user']);
+
+        $this->audit->log($request, 'tenant_reservation.created', Reservation::class, (int) $reservation->id, [
+            'target_label' => 'Reservation #'.$reservation->id,
+            'status' => 'success',
+            'after_values' => [
+                'id' => (int) $reservation->id,
+                'facility_id' => (int) $reservation->facility_id,
+                'facility_name' => (string) ($reservation->facility?->name ?? ''),
+                'user_id' => (int) $reservation->user_id,
+                'status' => (string) $reservation->status->value,
+                'starts_at' => optional($reservation->starts_at)->toIso8601String(),
+                'ends_at' => optional($reservation->ends_at)->toIso8601String(),
+                'payment_option' => $reservation->payment_option,
+            ],
         ]);
 
         return redirect()->route('tenant.reservations.index')->with('status', 'reservation-created');
@@ -124,6 +172,11 @@ class ReservationController extends Controller
     {
         $user = $request->user('tenant');
         Gate::forUser($user)->authorize('update', $reservation);
+        $before = [
+            'status' => (string) $reservation->status->value,
+            'approved_by' => $reservation->approved_by,
+            'revenue_amount' => $reservation->revenue_amount,
+        ];
 
         $data = $request->validate([
             'status' => ['required', 'in:pending,approved,rejected,completed'],
@@ -148,6 +201,19 @@ class ReservationController extends Controller
             }
         }
 
+        $after = [
+            'status' => (string) $reservation->status->value,
+            'approved_by' => $reservation->approved_by,
+            'revenue_amount' => $reservation->revenue_amount,
+        ];
+
+        $this->audit->log($request, 'tenant_reservation.updated', Reservation::class, (int) $reservation->id, [
+            'target_label' => 'Reservation #'.$reservation->id,
+            'status' => 'success',
+            'before_values' => $before,
+            'after_values' => $after,
+        ]);
+
         return redirect()->route('tenant.reservations.show', $reservation)->with('status', 'reservation-updated');
     }
 
@@ -155,8 +221,21 @@ class ReservationController extends Controller
     {
         $user = $request->user('tenant');
         Gate::forUser($user)->authorize('delete', $reservation);
+        $before = [
+            'id' => (int) $reservation->id,
+            'status' => (string) $reservation->status->value,
+            'facility_id' => (int) $reservation->facility_id,
+            'user_id' => (int) $reservation->user_id,
+        ];
+        $reservationId = (int) $reservation->id;
 
         $reservation->delete();
+
+        $this->audit->log($request, 'tenant_reservation.deleted', Reservation::class, $reservationId, [
+            'target_label' => 'Reservation #'.$reservationId,
+            'status' => 'success',
+            'before_values' => $before,
+        ]);
 
         return redirect()->route('tenant.reservations.index')->with('status', 'reservation-deleted');
     }

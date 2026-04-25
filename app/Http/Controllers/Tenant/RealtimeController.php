@@ -122,7 +122,7 @@ class RealtimeController extends Controller
         return response()->json([
             'totalRoles' => Role::query()->count(),
             'customRoles' => Role::query()
-                ->whereNotIn('name', ['tenant_admin', 'staff', 'viewer', 'resident'])
+                ->whereNotIn('name', ['tenant_admin', 'staff', 'resident'])
                 ->count(),
             'version' => now()->timestamp,
         ]);

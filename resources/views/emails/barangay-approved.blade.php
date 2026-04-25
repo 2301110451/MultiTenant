@@ -19,7 +19,23 @@
         <a href="{{ $portalUrl }}">{{ $portalUrl }}</a>
     </p>
 
-    <p>Sign in at that address using the email and password you provided for your role.</p>
+    <p><strong>Login credentials:</strong></p>
+    <ul>
+        @if(!empty($tenantAdminEmail))
+            <li>
+                <strong>Tenant Admin Gmail:</strong> {{ $tenantAdminEmail }}<br>
+                <strong>Tenant Admin Password:</strong> {{ $tenantAdminPassword ?: '—' }}
+            </li>
+        @endif
+        @if(!empty($staffEmail))
+            <li style="margin-top: 8px;">
+                <strong>Staff Gmail:</strong> {{ $staffEmail }}<br>
+                <strong>Staff Password:</strong> {{ $staffPassword ?: '—' }}
+            </li>
+        @endif
+    </ul>
+
+    <p>Sign in at that address using the credentials above.</p>
 
     <p>Thank you.</p>
 </body>

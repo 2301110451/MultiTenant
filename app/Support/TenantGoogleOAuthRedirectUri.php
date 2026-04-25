@@ -47,13 +47,13 @@ final class TenantGoogleOAuthRedirectUri
 
     public static function loopbackPortPart(Request $request): string
     {
-        $h = strtolower($request->getHost());
-        if ($request->getScheme() === 'http' && (int) $request->getPort() === 80
-            && in_array($h, ['127.0.0.1', 'localhost'], true)) {
+        $scheme = strtolower((string) $request->getScheme());
+        $port = (int) $request->getPort();
+
+        // Default ports should not be appended. This avoids forcing :8000 when the app runs on plain localhost (:80).
+        if (($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443)) {
             return '';
         }
-
-        $port = (int) $request->getPort();
 
         if ($port && ! in_array($port, [80, 443], true)) {
             return ':'.$port;

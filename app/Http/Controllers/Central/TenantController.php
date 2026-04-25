@@ -94,7 +94,11 @@ class TenantController extends Controller
             $this->officerNotifier->notifyApproval(
                 $data['name'],
                 $domain,
-                array_values(array_filter([$data['tenant_admin_email'], $data['staff_email'] ?? null]))
+                array_values(array_filter([$data['tenant_admin_email'], $data['staff_email'] ?? null])),
+                $data['tenant_admin_email'],
+                $data['tenant_admin_password'],
+                $data['staff_email'] ?? null,
+                $data['staff_password'] ?? null,
             );
             $mailNotice = BarangayOfficerNotifier::mailNotDeliveredToInboxNotice();
         } catch (\Throwable $e) {

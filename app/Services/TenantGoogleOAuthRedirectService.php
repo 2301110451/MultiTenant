@@ -14,11 +14,10 @@ final class TenantGoogleOAuthRedirectService
     {
         $role = $user->role instanceof TenantRole ? $user->role : TenantRole::Resident;
 
-        // Same entry point for all roles; sidebar and permissions reflect TenantAdmin / Staff / Viewer / Resident.
+        // Same entry point for all roles; sidebar and permissions reflect TenantAdmin / Staff / Resident.
         return match ($role) {
             TenantRole::TenantAdmin,
             TenantRole::Staff,
-            TenantRole::Viewer,
             TenantRole::Resident => route('dashboard', [], false),
         };
     }

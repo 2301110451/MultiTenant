@@ -1,0 +1,65 @@
+name: CI Validate (Staging Gate)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_run_id:
+        description: "Deployment run identifier from control plane"
+        required: true
+        type: string
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies (clean, reproducible)
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Static analysis (lint style gate)
+        run: php vendor/bin/pint --test
+
+      - name: Dependency integrity
+        run: composer validate --strict
+
+      - name: Dependency vulnerability scan
+        run: composer audit --format=summary
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare app key
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        run: php artisan test --stop-on-failure
+
+      - name: Smoke test health endpoint
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8080 > /tmp/laravel.log 2>&1 &
+          sleep 5
+          curl -fsS http://127.0.0.1:8080/up

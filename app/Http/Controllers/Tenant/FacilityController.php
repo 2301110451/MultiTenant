@@ -7,6 +7,7 @@ use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\Reservation;
+use App\Services\TenantAuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,10 @@ use Illuminate\View\View;
 
 class FacilityController extends Controller
 {
+    public function __construct(
+        private TenantAuditLogger $audit,
+    ) {}
+
     private function authorizeAction(Request $request, string $ability, ?Facility $facility = null): void
     {
         $user = $request->user('tenant');
@@ -66,6 +71,17 @@ class FacilityController extends Controller
 
         $canManage = $request->user('tenant')?->canManageTenant() ?? false;
         $canReserve = Gate::forUser($request->user('tenant'))->allows('create', Reservation::class);
+        $modal = (string) old('_modal_context', (string) $request->query('modal', ''));
+        $editFacilityId = (int) old('_modal_target_id', (int) $request->query('facility', 0));
+        $editFacility = null;
+        if ($canManage && $modal === 'edit-facility' && $editFacilityId > 0) {
+            $candidate = Facility::query()->find($editFacilityId);
+            if ($candidate) {
+                if (Gate::forUser($request->user('tenant'))->allows('update', $candidate)) {
+                    $editFacility = $candidate;
+                }
+            }
+        }
 
         return view('tenant.facilities.index', [
             'facilities' => $facilities,
@@ -73,6 +89,8 @@ class FacilityController extends Controller
             'canManage' => $canManage,
             'canReserve' => $canReserve,
             'blockingByFacilityId' => $blockingByFacilityId,
+            'modal' => $modal,
+            'editFacility' => $editFacility,
         ]);
     }
 
@@ -117,7 +135,15 @@ class FacilityController extends Controller
         $data['image_path'] = $request->file('image')?->store('facility-images', 'public');
         unset($data['image']);
 
-        Facility::query()->create($data);
+        $facility = Facility::query()->create($data);
+
+        $this->audit->log($request, 'tenant_facility.created', Facility::class, (int) $facility->id, [
+            'target_label' => (string) $facility->name,
+            'status' => 'success',
+            'after_values' => $facility->only([
+                'name', 'kind', 'description', 'capacity', 'rules', 'hourly_rate', 'is_active', 'image_path',
+            ]),
+        ]);
 
         return redirect()->route('tenant.facilities.index')->with('status', 'facility-created');
     }
@@ -162,8 +188,21 @@ class FacilityController extends Controller
         }
 
         unset($data['image'], $data['remove_image']);
+        $before = $facility->only([
+            'name', 'kind', 'description', 'capacity', 'rules', 'hourly_rate', 'is_active', 'image_path',
+        ]);
 
         $facility->update($data);
+        $after = $facility->fresh()?->only([
+            'name', 'kind', 'description', 'capacity', 'rules', 'hourly_rate', 'is_active', 'image_path',
+        ]) ?? [];
+
+        $this->audit->log($request, 'tenant_facility.updated', Facility::class, (int) $facility->id, [
+            'target_label' => (string) ($after['name'] ?? $facility->name),
+            'status' => 'success',
+            'before_values' => $before,
+            'after_values' => $after,
+        ]);
 
         return redirect()->route('tenant.facilities.index')->with('status', 'facility-updated');
     }
@@ -171,6 +210,10 @@ class FacilityController extends Controller
     public function destroy(Request $request, Facility $facility): RedirectResponse
     {
         $this->authorizeAction($request, 'delete', $facility);
+        $before = $facility->only([
+            'name', 'kind', 'description', 'capacity', 'rules', 'hourly_rate', 'is_active', 'image_path',
+        ]);
+        $facilityId = (int) $facility->id;
 
         $legacyPath = $facility->getAttributes()['image_path'] ?? null;
         if (is_string($legacyPath) && $legacyPath !== '') {
@@ -178,6 +221,12 @@ class FacilityController extends Controller
         }
 
         $facility->delete();
+
+        $this->audit->log($request, 'tenant_facility.deleted', Facility::class, $facilityId, [
+            'target_label' => (string) ($before['name'] ?? 'facility'),
+            'status' => 'success',
+            'before_values' => $before,
+        ]);
 
         return redirect()->route('tenant.facilities.index')->with('status', 'facility-deleted');
     }

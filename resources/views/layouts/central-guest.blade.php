@@ -160,6 +160,7 @@
     </div>
 
 </div>
+<x-recaptcha-disclosure />
 @stack('scripts')
 </body>
 </html>

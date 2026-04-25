@@ -23,17 +23,29 @@ class UserManagementController extends Controller
     public function index(Request $request): View
     {
         $this->authorizeUsers($request, 'viewAny');
+        $actor = $request->user('tenant');
 
         $users = User::query()->with('roles')->latest()->paginate(20);
+        $roles = Role::query()->where('name', '!=', 'viewer')->orderBy('name')->get();
+        $modal = (string) old('_modal_context', (string) $request->query('modal', ''));
+        $editUserId = (int) old('_modal_target_id', (int) $request->query('user', 0));
+        $editUser = null;
+        if ($modal === 'edit-user' && $editUserId > 0) {
+            $candidate = User::query()->with('roles')->find($editUserId);
+            if ($candidate && Gate::forUser($actor)->allows('update', $candidate)) {
+                $editUser = $candidate;
+            }
+        }
+        $canCreate = Gate::forUser($actor)->allows('create', User::class);
 
-        return view('tenant.users.index', compact('users'));
+        return view('tenant.users.index', compact('users', 'roles', 'modal', 'editUser', 'canCreate'));
     }
 
     public function create(Request $request): View
     {
         $this->authorizeUsers($request, 'create');
 
-        $roles = Role::query()->orderBy('name')->get();
+        $roles = Role::query()->where('name', '!=', 'viewer')->orderBy('name')->get();
 
         return view('tenant.users.create', compact('roles'));
     }
@@ -76,7 +88,7 @@ class UserManagementController extends Controller
     {
         $this->authorizeUsers($request, 'update', $user);
 
-        $roles = Role::query()->orderBy('name')->get();
+        $roles = Role::query()->where('name', '!=', 'viewer')->orderBy('name')->get();
 
         return view('tenant.users.edit', compact('user', 'roles'));
     }

@@ -20,7 +20,15 @@ class BarangayOfficerNotifier
     /**
      * @param  list<string>  $recipientEmails
      */
-    public function notifyApproval(string $barangayName, string $domain, array $recipientEmails): void
+    public function notifyApproval(
+        string $barangayName,
+        string $domain,
+        array $recipientEmails,
+        ?string $tenantAdminEmail = null,
+        ?string $tenantAdminPassword = null,
+        ?string $staffEmail = null,
+        ?string $staffPassword = null,
+    ): void
     {
         $this->assertSmtpCredentialsConfigured();
 
@@ -29,7 +37,15 @@ class BarangayOfficerNotifier
         $unique = array_values(array_unique(array_filter(array_map('strtolower', $recipientEmails))));
 
         foreach ($unique as $email) {
-            Mail::to($email)->send(new BarangayApprovedMail($barangayName, $domain, $portalUrl));
+            Mail::to($email)->send(new BarangayApprovedMail(
+                $barangayName,
+                $domain,
+                $portalUrl,
+                $tenantAdminEmail ? strtolower($tenantAdminEmail) : null,
+                $tenantAdminPassword,
+                $staffEmail ? strtolower($staffEmail) : null,
+                $staffPassword,
+            ));
         }
     }
 

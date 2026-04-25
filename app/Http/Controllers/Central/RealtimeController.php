@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeploymentCandidate;
 use App\Models\SupportTicket;
 use App\Models\TenantSubscriptionIntent;
 use App\Support\CentralDashboardMetrics;
@@ -64,6 +65,22 @@ class RealtimeController extends Controller
             'openCount' => (int) ($row->open_count ?? 0),
             'inProgressCount' => (int) ($row->in_progress ?? 0),
             'resolvedCount' => (int) ($row->resolved ?? 0),
+            'version' => now()->timestamp,
+        ]);
+    }
+
+    public function deploymentCandidates(): JsonResponse
+    {
+        $row = DeploymentCandidate::query()
+            ->selectRaw("coalesce(sum(case when status = 'pending_review' then 1 else 0 end), 0) as pending_review")
+            ->selectRaw("coalesce(sum(case when status = 'approved' then 1 else 0 end), 0) as approved")
+            ->selectRaw("coalesce(sum(case when status = 'rejected' then 1 else 0 end), 0) as rejected")
+            ->first();
+
+        return response()->json([
+            'pendingReviewCount' => (int) ($row->pending_review ?? 0),
+            'approvedCount' => (int) ($row->approved ?? 0),
+            'rejectedCount' => (int) ($row->rejected ?? 0),
             'version' => now()->timestamp,
         ]);
     }

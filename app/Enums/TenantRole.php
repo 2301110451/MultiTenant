@@ -6,7 +6,6 @@ enum TenantRole: string
 {
     case TenantAdmin = 'tenant_admin';
     case Staff = 'staff';
-    case Viewer = 'viewer';
     case Resident = 'resident';
 
     /**
@@ -23,7 +22,7 @@ enum TenantRole: string
         return match ($v) {
             'secretary', 'tenant_admin' => self::TenantAdmin,
             'barangay_captain', 'captain', 'staff', 'custodian' => self::Staff,
-            'viewer' => self::Viewer,
+            'viewer' => self::Resident,
             'resident', 'user' => self::Resident,
             default => self::tryFrom($v) ?? self::Resident,
         };

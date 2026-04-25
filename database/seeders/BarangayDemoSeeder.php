@@ -66,7 +66,6 @@ class BarangayDemoSeeder extends Seeder
         $users = [
             ['name' => 'Maria Santos', 'email' => 'admin@'.$slug.'.test', 'role' => TenantRole::TenantAdmin],
             ['name' => 'Pedro Reyes', 'email' => 'staff@'.$slug.'.test', 'role' => TenantRole::Staff],
-            ['name' => 'Ana Cruz', 'email' => 'viewer@'.$slug.'.test', 'role' => TenantRole::Viewer],
             ['name' => 'Juan Dela Cruz', 'email' => 'resident@'.$slug.'.test', 'role' => TenantRole::Resident],
         ];
 

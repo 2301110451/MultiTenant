@@ -1,5 +1,14 @@
 @php
     use App\Enums\FacilityKind;
+    $modal = $modal ?? '';
+    $baseIndexParams = [];
+    if ($kindFilter !== null) {
+        $baseIndexParams['kind'] = $kindFilter;
+    }
+    $closeModalUrl = route('tenant.facilities.index', $baseIndexParams);
+    $openCreateModalUrl = route('tenant.facilities.index', array_merge($baseIndexParams, ['modal' => 'create-facility']));
+    $isCreateModalOpen = $canManage && $modal === 'create-facility';
+    $isEditModalOpen = $canManage && $modal === 'edit-facility' && $editFacility !== null;
     $pageTitle = match ($kindFilter) {
         'equipment' => 'Equipment',
         'facility' => 'Facilities',
@@ -37,7 +46,7 @@
                             Equipment
                         </a>
                     </div>
-                    <a href="{{ route('tenant.facilities.create') }}"
+                    <a href="{{ $openCreateModalUrl }}"
                        class="inline-flex items-center justify-center gap-2 t-btn-primary px-5 py-2.5 shadow-sm whitespace-nowrap">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -66,7 +75,7 @@
             <div class="t-card p-12 text-center text-sm text-slate-500 dark:text-slate-400">
                 @if($canManage)
                     Nothing here yet.
-                    <a href="{{ route('tenant.facilities.create') }}" class="t-link hover:underline">Add a facility or equipment listing</a>.
+                    <a href="{{ $openCreateModalUrl }}" class="t-link hover:underline">Add a facility or equipment listing</a>.
                 @else
                     No active listings in this category right now.
                 @endif
@@ -147,7 +156,7 @@
                             <div class="mt-5 flex flex-wrap items-center gap-2 pt-auto">
                                 @if($canManage)
                                     <a
-                                        href="{{ route('tenant.facilities.edit', $facility) }}"
+                                        href="{{ route('tenant.facilities.index', array_merge($baseIndexParams, ['modal' => 'edit-facility', 'facility' => $facility->id])) }}"
                                         class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/60 transition-colors"
                                     >
                                         Edit listing
@@ -168,4 +177,153 @@
             <div class="mt-8">{{ $facilities->links() }}</div>
         @endif
     </div>
+
+    @if($canManage)
+        <x-modal name="create-facility-modal" :show="$isCreateModalOpen" maxWidth="2xl">
+            <div class="p-6 sm:p-8">
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Add listing</h2>
+                    <a href="{{ $closeModalUrl }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Close</a>
+                </div>
+                <form method="POST" action="{{ route('tenant.facilities.store') }}" enctype="multipart/form-data" class="space-y-5">
+                    @csrf
+                    <input type="hidden" name="_modal_context" value="create-facility">
+
+                    @if ($isCreateModalOpen && $errors->any())
+                        <div class="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl px-4 py-3 space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <p>{{ $error }}</p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <div>
+                        <label class="t-label" for="facility_create_name">Name</label>
+                        <input id="facility_create_name" name="name" class="t-input" value="{{ old('name') }}" required />
+                    </div>
+                    <div>
+                        <label class="t-label" for="facility_create_kind">Category</label>
+                        <select id="facility_create_kind" name="kind" class="t-input" required>
+                            <option value="{{ FacilityKind::Facility->value }}" @selected(old('kind', FacilityKind::Facility->value) === FacilityKind::Facility->value)>Facility (hall, court, room, space)</option>
+                            <option value="{{ FacilityKind::Equipment->value }}" @selected(old('kind') === FacilityKind::Equipment->value)>Equipment (rentable item by time slot)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="t-label" for="facility_create_description">Description</label>
+                        <textarea id="facility_create_description" name="description" rows="3" class="t-textarea">{{ old('description') }}</textarea>
+                    </div>
+                    <div>
+                        <label class="t-label" for="facility_create_capacity">Capacity</label>
+                        <input id="facility_create_capacity" name="capacity" type="number" min="0" class="t-input" value="{{ old('capacity', 0) }}" required />
+                    </div>
+                    <div>
+                        <label class="t-label" for="facility_create_rules">Rules</label>
+                        <textarea id="facility_create_rules" name="rules" rows="3" class="t-textarea">{{ old('rules') }}</textarea>
+                    </div>
+                    <div>
+                        <label class="t-label" for="facility_create_hourly_rate">Hourly rate</label>
+                        <input id="facility_create_hourly_rate" name="hourly_rate" type="number" step="0.01" min="0" class="t-input" value="{{ old('hourly_rate', 0) }}" />
+                    </div>
+                    <div>
+                        <label class="t-label" for="facility_create_image">Listing photo (optional)</label>
+                        <input id="facility_create_image" name="image" type="file" accept="image/*" class="t-input file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:file:bg-slate-700" />
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">PNG, JPG, WEBP up to 5MB.</p>
+                    </div>
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" name="is_active" value="1" @checked((string) old('is_active', '1') === '1')
+                               class="t-checkbox-accent rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800" />
+                        <span class="text-sm text-slate-700 dark:text-slate-300">Active</span>
+                    </label>
+                    <button type="submit" class="t-btn-primary w-full justify-center py-3 shadow-sm">
+                        Save listing
+                    </button>
+                </form>
+            </div>
+        </x-modal>
+
+        @if($editFacility)
+            <x-modal name="edit-facility-modal" :show="$isEditModalOpen" maxWidth="2xl">
+                <div class="p-6 sm:p-8 space-y-6">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Edit listing</h2>
+                        <a href="{{ $closeModalUrl }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Close</a>
+                    </div>
+
+                    <form method="POST" action="{{ route('tenant.facilities.update', $editFacility) }}" enctype="multipart/form-data" class="space-y-5">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="_modal_context" value="edit-facility">
+                        <input type="hidden" name="_modal_target_id" value="{{ $editFacility->id }}">
+
+                        @if ($isEditModalOpen && $errors->any())
+                            <div class="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl px-4 py-3 space-y-1">
+                                @foreach ($errors->all() as $error)
+                                    <p>{{ $error }}</p>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <div>
+                            <label class="t-label" for="facility_edit_name">Name</label>
+                            <input id="facility_edit_name" name="name" class="t-input" value="{{ old('name', $editFacility->name) }}" required />
+                        </div>
+                        <div>
+                            <label class="t-label" for="facility_edit_kind">Category</label>
+                            <select id="facility_edit_kind" name="kind" class="t-input" required>
+                                <option value="{{ FacilityKind::Facility->value }}" @selected(old('kind', $editFacility->kind->value) === FacilityKind::Facility->value)>Facility</option>
+                                <option value="{{ FacilityKind::Equipment->value }}" @selected(old('kind', $editFacility->kind->value) === FacilityKind::Equipment->value)>Equipment</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="t-label" for="facility_edit_description">Description</label>
+                            <textarea id="facility_edit_description" name="description" rows="3" class="t-textarea">{{ old('description', $editFacility->description) }}</textarea>
+                        </div>
+                        <div>
+                            <label class="t-label" for="facility_edit_capacity">Capacity</label>
+                            <input id="facility_edit_capacity" name="capacity" type="number" min="0" class="t-input" value="{{ old('capacity', $editFacility->capacity) }}" required />
+                        </div>
+                        <div>
+                            <label class="t-label" for="facility_edit_rules">Rules</label>
+                            <textarea id="facility_edit_rules" name="rules" rows="3" class="t-textarea">{{ old('rules', $editFacility->rules) }}</textarea>
+                        </div>
+                        <div>
+                            <label class="t-label" for="facility_edit_hourly_rate">Hourly rate</label>
+                            <input id="facility_edit_hourly_rate" name="hourly_rate" type="number" step="0.01" min="0" class="t-input" value="{{ old('hourly_rate', $editFacility->hourly_rate) }}" />
+                        </div>
+                        <div class="space-y-3">
+                            <label class="t-label" for="facility_edit_image">Listing photo</label>
+                            @if($editFacility->image_path)
+                                <img src="{{ route('tenant.facilities.image', $editFacility) }}" alt="{{ $editFacility->name }} photo" class="w-full max-h-56 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
+                            @endif
+                            <input id="facility_edit_image" name="image" type="file" accept="image/*" class="t-input file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:file:bg-slate-700" />
+                            @if($editFacility->image_path)
+                                <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <input type="checkbox" name="remove_image" value="1" class="t-checkbox-accent rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800">
+                                    Remove current photo
+                                </label>
+                            @endif
+                        </div>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" name="is_active" value="1" @checked((string) old('is_active', $editFacility->is_active ? '1' : '0') === '1')
+                                   class="t-checkbox-accent rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800" />
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Active</span>
+                        </label>
+                        <button type="submit" class="t-btn-primary w-full justify-center py-3 shadow-sm">
+                            Save changes
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ route('tenant.facilities.destroy', $editFacility) }}"
+                          class="border-t border-red-200 dark:border-red-900 pt-4"
+                          onsubmit="return confirm('Delete this facility? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
+                            Delete listing
+                        </button>
+                    </form>
+                </div>
+            </x-modal>
+        @endif
+    @endif
 </x-tenant-layout>

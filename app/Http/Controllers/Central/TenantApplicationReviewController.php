@@ -94,6 +94,10 @@ class TenantApplicationReviewController extends Controller
                     $application->barangay_name,
                     $domain,
                     array_values(array_filter([$tenantAdminEmail, $staffEmail])),
+                    $tenantAdminEmail,
+                    $tenantAdminPassword,
+                    $staffEmail,
+                    $staffPassword,
                 );
             } catch (\Throwable $e) {
                 report($e);

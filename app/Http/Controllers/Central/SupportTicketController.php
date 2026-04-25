@@ -36,12 +36,22 @@ class SupportTicketController extends Controller
         ]);
 
         if ($previousStatus !== $newStatus && filter_var($supportTicket->requester_email, FILTER_VALIDATE_EMAIL)) {
+            $mailFailed = false;
             try {
+                // Send immediately so reporter receives status updates without requiring a queue worker.
                 Mail::to($supportTicket->requester_email)->send(
                     new SupportTicketStatusUpdatedMail($supportTicket->fresh(['tenant']), $previousStatus, $newStatus)
                 );
             } catch (\Throwable $e) {
                 report($e);
+                $mailFailed = true;
+            }
+
+            if ($mailFailed) {
+                return redirect()
+                    ->route('central.support-tickets.index')
+                    ->with('success', 'Ticket updated.')
+                    ->with('error', 'Ticket updated but status email could not be sent. Check mail settings/logs.');
             }
         }
 
