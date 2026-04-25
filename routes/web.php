@@ -21,6 +21,7 @@ use App\Http\Controllers\Central\UpdateAnnouncementController;
 use App\Http\Controllers\Central\FeatureLabController;
 use App\Http\Controllers\Central\ReleaseSmokeTestController; // ✅ NEW
 use App\Http\Controllers\Central\ReleaseFlowTestController;
+use App\Http\Controllers\Central\ReleaseChangelogTestController;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
