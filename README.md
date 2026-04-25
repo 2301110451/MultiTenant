@@ -232,7 +232,7 @@ php vendor/bin/pint --test
 
 ## 13. 👨‍💻 DEVELOPER
 
-ONLY DEVELOPER:
+DEVELOPER:
 JOSHUA PHILIP M. CAGAANAN
 
 ---
