@@ -18,7 +18,8 @@ use App\Http\Controllers\Central\TenantApplicationReviewController;
 use App\Http\Controllers\Central\TenantController;
 use App\Http\Controllers\Central\TenantSubscriptionIntentController;
 use App\Http\Controllers\Central\UpdateAnnouncementController;
-use App\Http\Controllers\Central\FeatureLabController; // ✅ ADDED
+use App\Http\Controllers\Central\FeatureLabController;
+use App\Http\Controllers\Central\ReleaseSmokeTestController; // ✅ NEW
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -110,8 +111,11 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::get('realtime/support-tickets', [CentralRealtimeController::class, 'supportTickets'])->name('realtime.support-tickets');
         Route::get('realtime/deployment-candidates', [CentralRealtimeController::class, 'deploymentCandidates'])->name('realtime.deployment-candidates');
 
-        // ✅ YOUR NEW FEATURE
+        // ✅ EXISTING FEATURE
         Route::get('feature-lab', [FeatureLabController::class, 'index'])->name('feature-lab.index');
+
+        // ✅ NEW FEATURE (SMOKE TEST)
+        Route::get('release-smoke-test', [ReleaseSmokeTestController::class, 'index'])->name('release-smoke-test.index');
     });
 
     Route::middleware([EnsureCentralHost::class, 'auth:web', 'super.admin'])->prefix('central/global-updates')->name('central.global-updates.')->group(function () {
@@ -130,7 +134,7 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     });
 
     Route::middleware([EnsureTenantHost::class, 'auth:tenant'])->prefix('tenant')->name('tenant.')->group(function () {
-        // (UNCHANGED — your tenant routes remain exactly the same)
+        // unchanged
     });
 
 });
