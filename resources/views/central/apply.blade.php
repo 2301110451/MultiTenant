@@ -28,17 +28,15 @@
     {{-- Top bar --}}
     <header class="relative z-30 border-b border-white/10 bg-slate-950/40 backdrop-blur-md">
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-            <a href="{{ route('home') }}" class="text-sm font-semibold text-white hover:text-indigo-300 transition">
-                &larr; Back to home
-            </a>
-            <button
-                type="button"
-                @click="open = true"
-                class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 hover:bg-indigo-500"
+            <a
+                href="{{ route('home') }}"
+                class="inline-flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:scale-[1.02] hover:from-indigo-700 hover:to-violet-700"
             >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                Open application
-            </button>
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+                Back to home
+            </a>
         </div>
     </header>
 
@@ -78,7 +76,7 @@
             </div>
         @endif
 
-        <div class="mb-12 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div class="mb-12 flex justify-center">
             <button
                 type="button"
                 @click="open = true"
@@ -87,12 +85,6 @@
                 Start application
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
             </button>
-            <a
-                href="{{ route('login') }}"
-                class="inline-flex items-center justify-center rounded-xl border border-white/20 px-8 py-3.5 text-sm font-semibold text-white/90 hover:bg-white/10"
-            >
-                Central admin sign in
-            </a>
         </div>
 
         <div class="grid w-full max-w-5xl gap-5 sm:grid-cols-3">
@@ -117,17 +109,6 @@
             &copy; {{ date('Y') }} {{ config('app.name') }}
         </p>
     </main>
-
-    {{-- Floating action --}}
-    <button
-        type="button"
-        @click="open = true"
-        class="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full border border-indigo-400/40 bg-indigo-600 px-5 py-3.5 text-sm font-bold text-white shadow-2xl shadow-indigo-900/50 transition hover:scale-105 hover:bg-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/30"
-        aria-label="Open application form"
-    >
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Apply now
-    </button>
 
     {{-- Modal --}}
     <div

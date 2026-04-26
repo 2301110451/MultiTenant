@@ -135,6 +135,14 @@
             </svg>
             Sign in to Admin Panel
         </a>
+        <a href="{{ route('tenant.login.selector') }}"
+           class="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl font-semibold text-sm border backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+           :class="dark ? 'bg-white/[0.06] hover:bg-white/[0.12] border-white/[0.12] text-white' : 'bg-white/80 hover:bg-white border-indigo-200 text-indigo-700 shadow-sm'">
+            <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.118a7.5 7.5 0 0 1 15 0A17.933 17.933 0 0 1 12 21.75a17.933 17.933 0 0 1-7.5-1.632Z"/>
+            </svg>
+            Tenant Portal Login
+        </a>
     </div>
 
     {{-- Feature grid --}}

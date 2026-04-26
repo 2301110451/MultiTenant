@@ -185,28 +185,21 @@ class TenantProvisioningService
     }
 
     /**
-     * Build a unique tenant DB name from a hash of the barangay name (opaque, ASCII-safe).
-     * MySQL database names are limited to 64 characters; tenant_ + 32 hex = 39 chars.
+     * Build a unique tenant DB name using a random opaque suffix.
+     * This avoids deterministic collisions from repeated tenant names that cause _1/_2/_3 variants.
      */
     private function generateUniqueDatabaseName(string $barangayName): string
     {
-        $normalized = trim($barangayName);
-        if ($normalized === '') {
-            $normalized = 'barangay';
-        }
-
-        $hash = substr(hash('sha256', Str::lower($normalized)), 0, 32);
-        $base = 'tenant_'.$hash;
-        $i = 0;
+        $attempts = 0;
 
         do {
-            $candidate = $i === 0 ? $base : $base.'_'.$i;
+            $candidate = 'tenant_'.Str::lower(Str::random(32));
             $existsInTenants = Tenant::query()->where('database', $candidate)->exists();
             $quoted = DB::connection('mysql')->getPdo()->quote($candidate);
             $existsInMysql = DB::connection('mysql')
                 ->select("SHOW DATABASES LIKE {$quoted}") !== [];
-            $i++;
-        } while (($existsInTenants || $existsInMysql) && $i < 500);
+            $attempts++;
+        } while (($existsInTenants || $existsInMysql) && $attempts < 50);
 
         if ($existsInTenants || $existsInMysql) {
             return 'tenant_'.Str::lower(Str::random(32));

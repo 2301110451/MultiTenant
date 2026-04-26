@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TenantLoginSelectorController;
 use App\Http\Controllers\Central\DeploymentCandidateController;
 use App\Http\Controllers\Central\DeploymentRunController;
 use App\Http\Controllers\Central\GlobalUpdateController;
@@ -64,6 +65,9 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     });
 
     Route::middleware([EnsureCentralHost::class])->group(function () {
+        Route::get('/tenant-login', [TenantLoginSelectorController::class, 'index'])->name('tenant.login.selector');
+        Route::post('/tenant-login', [TenantLoginSelectorController::class, 'redirect'])->name('tenant.login.selector.redirect');
+
         Route::get('/apply', [TenantApplicationController::class, 'create'])->name('central.apply');
         Route::post('/apply', [TenantApplicationController::class, 'store'])->name('central.apply.store');
 

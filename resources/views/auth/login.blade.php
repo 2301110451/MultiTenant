@@ -98,6 +98,13 @@
             </svg>
             Sign in to Admin Panel
         </button>
+
+        <p class="text-center text-sm text-slate-500 dark:text-slate-400">
+            Tenant user?
+            <a href="{{ route('tenant.login.selector') }}" class="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                Choose your barangay portal
+            </a>
+        </p>
     </form>
 
 </x-central-guest-layout>
