@@ -8,14 +8,14 @@ use App\Models\GlobalUpdateAuditLog;
 use App\Models\Release;
 use App\Models\SystemVersion;
 use App\Services\CentralReleaseService;
+use App\Services\GitHubService;
 use App\Services\GlobalUpdateAuditLogger;
 use App\Services\GlobalUpdateService;
-use App\Services\GitHubService;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class ReleaseController extends Controller

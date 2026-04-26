@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SupportTicketStatusUpdatedMail;
 use App\Models\CentralUser;
 use App\Models\GlobalUpdateAuditLog;
-use App\Mail\SupportTicketStatusUpdatedMail;
 use App\Models\SupportTicket;
 use App\Services\GlobalUpdateAuditLogger;
 use Illuminate\Http\RedirectResponse;
