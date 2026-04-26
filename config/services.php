@@ -77,4 +77,17 @@ return [
         'http_ssl_verify' => filter_var(env('GITHUB_HTTP_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
     ],
 
+    'laptop_sync' => [
+        // Shared secret between laptop 1 (provider) and laptop 2 (consumer).
+        'token' => env('LAPTOP_SYNC_TOKEN'),
+        // URL of laptop 1 API endpoint, e.g. http://192.168.1.10:8000/api/laptop-sync/latest-approved-release
+        'source_release_url' => env('LAPTOP_SYNC_SOURCE_RELEASE_URL'),
+        // Branch on laptop 2 that receives approved updates.
+        'target_branch' => env('LAPTOP_SYNC_TARGET_BRANCH', 'main'),
+        // If true, browser refresh (web GET/HEAD request) can trigger safe sync on laptop 2.
+        'web_request_sync_enabled' => filter_var(env('LAPTOP_SYNC_WEB_REQUEST_SYNC_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN),
+        // Minimum seconds between web-triggered sync attempts.
+        'web_request_sync_interval_seconds' => (int) env('LAPTOP_SYNC_WEB_REQUEST_SYNC_INTERVAL_SECONDS', 60),
+    ],
+
 ];

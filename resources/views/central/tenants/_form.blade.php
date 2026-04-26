@@ -49,7 +49,6 @@
             <select id="{{ $isModal ? 'modal_plan_id' : 'plan_id' }}" name="plan_id"
                     class="w-full pl-10 pr-10 py-2.5 text-sm border rounded-xl transition appearance-none
                            {{ $errors->has('plan_id') ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-slate-300 dark:border-slate-600 dark:bg-slate-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100' }}">
-                <option value="">— No plan (Free) —</option>
                 @foreach($plans as $plan)
                     <option value="{{ $plan->id }}" {{ old('plan_id') == $plan->id ? 'selected' : '' }}>
                         {{ $plan->name }} — {{ $plan->monthly_reservation_limit === null ? 'Unlimited' : number_format($plan->monthly_reservation_limit) }} reservations/mo

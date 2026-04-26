@@ -26,7 +26,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Tenant\FacilityController;
 use App\Http\Controllers\Tenant\RealtimeController as TenantRealtimeController;
-use App\Http\Controllers\Tenant\ReleaseController as TenantReleaseController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\ReservationController;
 use App\Http\Controllers\Tenant\RoleManagementController;
@@ -165,8 +164,6 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::get('support', [SupportTicketController::class, 'index'])->name('support.index')->middleware('tenant.permission:support.view');
         Route::post('support', [SupportTicketController::class, 'store'])->name('support.store')->middleware('tenant.permission:support.view');
         Route::get('updates', [UpdateFeedController::class, 'index'])->name('updates.index')->middleware('tenant.permission:updates.view');
-        Route::get('releases', [TenantReleaseController::class, 'index'])->name('releases.index')->middleware('tenant.permission:updates.view');
-        Route::post('releases/{release}/apply', [TenantReleaseController::class, 'apply'])->name('releases.apply')->middleware('tenant.permission:updates.view');
         Route::post('updates/announcements', [TenantAnnouncementController::class, 'store'])->name('announcements.store')->middleware('tenant.permission:updates.manage');
 
         Route::get('facilities/{facility}/image', [FacilityController::class, 'image'])->name('facilities.image')->middleware('tenant.permission:facilities.view');

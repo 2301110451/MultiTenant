@@ -35,10 +35,16 @@
         @keydown.escape.window="close()"
     >
         <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Support Tickets</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
-            Open: <strong data-live-key="openCount">{{ $tickets->getCollection()->where('status', 'open')->count() }}</strong>
-            <span class="ml-2">In progress: <strong data-live-key="inProgressCount">{{ $tickets->getCollection()->where('status', 'in_progress')->count() }}</strong></span>
-            <span class="ml-2">Resolved/Closed: <strong data-live-key="resolvedCount">{{ $tickets->getCollection()->whereIn('status', ['resolved', 'closed'])->count() }}</strong></span>
+        <p class="mt-1.5 text-base font-semibold text-slate-600 dark:text-slate-300">
+            <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-sky-900/30 px-2.5 py-1 text-sky-800 dark:text-sky-300">
+                Open: <strong data-live-key="openCount">{{ $tickets->getCollection()->where('status', 'open')->count() }}</strong>
+            </span>
+            <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-900/30 px-2.5 py-1 text-orange-800 dark:text-orange-300">
+                In progress: <strong data-live-key="inProgressCount">{{ $tickets->getCollection()->where('status', 'in_progress')->count() }}</strong>
+            </span>
+            <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-emerald-800 dark:text-emerald-300">
+                Resolved/Closed: <strong data-live-key="resolvedCount">{{ $tickets->getCollection()->whereIn('status', ['resolved', 'closed'])->count() }}</strong>
+            </span>
         </p>
 
         @if(session('success'))

@@ -58,7 +58,6 @@
             </div>
             <select id="edit_modal_plan_id" name="plan_id" x-model="edit.plan_id"
                     class="w-full pl-10 pr-10 py-2.5 text-sm border rounded-xl appearance-none transition border-slate-300 dark:border-slate-600 dark:bg-slate-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 {{ $errors->has('plan_id') ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : '' }}">
-                <option value="">— No plan —</option>
                 @foreach($plans as $plan)
                     <option value="{{ $plan->id }}">{{ $plan->name }} — {{ $plan->monthly_reservation_limit }} reservations/mo</option>
                 @endforeach

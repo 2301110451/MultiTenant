@@ -48,29 +48,29 @@
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Manage all registered barangays and their subscriptions.
                 </p>
-                <div class="flex flex-wrap items-center gap-3 mt-2">
-                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                        Total: <strong class="text-slate-700 dark:text-slate-200" data-live-key="tenantCount">{{ $tenants->total() }}</strong>
+                <div class="flex flex-wrap items-center gap-3 mt-3">
+                    <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                        Total: <strong class="text-base text-slate-800 dark:text-slate-100" data-live-key="tenantCount">{{ $tenants->total() }}</strong>
                     </span>
                     <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
-                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        Active: <strong data-live-key="activeTenants">{{ $tenants->getCollection()->where('status', 'active')->count() }}</strong>
+                    <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Active: <strong class="text-base" data-live-key="activeTenants">{{ $tenants->getCollection()->where('status', 'active')->count() }}</strong>
                     </span>
-                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
-                        <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                        Suspended: <strong data-live-key="suspendedTenants">{{ $tenants->getCollection()->where('status', 'suspended')->count() }}</strong>
+                    <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 dark:text-red-300">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        Suspended: <strong class="text-base" data-live-key="suspendedTenants">{{ $tenants->getCollection()->where('status', 'suspended')->count() }}</strong>
                     </span>
-                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                        Unsubscribed: <strong data-live-key="unsubscribedTenants">{{ $tenants->getCollection()->where('status', 'unsubscribed')->count() }}</strong>
+                    <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Unsubscribed: <strong class="text-base" data-live-key="unsubscribedTenants">{{ $tenants->getCollection()->where('status', 'unsubscribed')->count() }}</strong>
                     </span>
                 </div>
             </div>
             <button
                type="button"
                @click="showCreateModal = true"
-               class="btn-primary shrink-0">
+               class="btn-primary shrink-0 text-sm px-5 py-2.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>

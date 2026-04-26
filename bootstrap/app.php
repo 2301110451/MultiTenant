@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureTenantPlanFeature;
 use App\Http\Middleware\EnsureTenantRole;
 use App\Http\Middleware\IdentifyTenant;
 use App\Http\Middleware\RedirectIfAuthenticatedContext;
+use App\Http\Middleware\TriggerApprovedReleaseSyncOnWebRequest;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -34,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.plan' => EnsureTenantPlanFeature::class,
             'super.admin' => EnsureSuperAdmin::class,
         ]);
+
+        $middleware->appendToGroup('web', TriggerApprovedReleaseSyncOnWebRequest::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

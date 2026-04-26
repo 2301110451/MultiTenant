@@ -21,11 +21,17 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Subscription requests</h1>
-                <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                <p class="mt-1.5 text-base font-semibold text-slate-600 dark:text-slate-300">
                     Unsubscribe and extension submissions from suspended barangay portals.
-                    <span class="font-medium text-indigo-600 dark:text-indigo-400"><span data-live-key="pendingCount">{{ $pendingCount }}</span> pending</span>
-                    <span class="ml-2">Approved: <strong data-live-key="approvedCount">{{ $intents->getCollection()->where('status', 'approved')->count() }}</strong></span>
-                    <span class="ml-2">Rejected: <strong data-live-key="rejectedCount">{{ $intents->getCollection()->where('status', 'rejected')->count() }}</strong></span>
+                    <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 text-amber-800 dark:text-amber-300">
+                        <span data-live-key="pendingCount">{{ $pendingCount }}</span> pending
+                    </span>
+                    <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-emerald-800 dark:text-emerald-300">
+                        Approved: <strong data-live-key="approvedCount">{{ $intents->getCollection()->where('status', 'approved')->count() }}</strong>
+                    </span>
+                    <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-1 text-red-800 dark:text-red-300">
+                        Rejected: <strong data-live-key="rejectedCount">{{ $intents->getCollection()->where('status', 'rejected')->count() }}</strong>
+                    </span>
                 </p>
             </div>
         </div>

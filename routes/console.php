@@ -12,7 +12,10 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Schema;
 
@@ -443,3 +446,139 @@ Schedule::command('deployments:poll-github-commits')
 Schedule::command('deployments:poll-github-updates')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+Schedule::command('system:sync-approved-release --apply')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->when(fn (): bool => (bool) env('LAPTOP_SYNC_AUTO_APPLY', false));
+
+Artisan::command('system:sync-approved-release {--apply : Apply code update if an approved release exists}', function () {
+    $sourceUrl = trim((string) config('services.laptop_sync.source_release_url', ''));
+    if ($sourceUrl === '') {
+        $this->error('LAPTOP_SYNC_SOURCE_RELEASE_URL is not configured.');
+
+        return self::FAILURE;
+    }
+
+    $token = trim((string) config('services.laptop_sync.token', ''));
+    $targetBranch = trim((string) config('services.laptop_sync.target_branch', 'main'));
+    if ($targetBranch === '') {
+        $targetBranch = 'main';
+    }
+
+    $headers = ['Accept' => 'application/json'];
+    if ($token !== '') {
+        $headers['X-Laptop-Sync-Token'] = $token;
+    }
+
+    try {
+        $response = Http::timeout(20)->withHeaders($headers)->get($sourceUrl);
+    } catch (Throwable $e) {
+        $this->error('Failed to reach laptop-1 source API: '.$e->getMessage());
+
+        return self::FAILURE;
+    }
+
+    if (! $response->successful()) {
+        $this->error('Source API returned HTTP '.$response->status().'.');
+
+        return self::FAILURE;
+    }
+
+    $json = $response->json();
+    $data = is_array($json) ? ($json['data'] ?? null) : null;
+    if (! is_array($data) || ! isset($data['source_commit_sha'])) {
+        $this->warn('No approved release found from source.');
+
+        return self::SUCCESS;
+    }
+
+    $approvedSha = trim((string) $data['source_commit_sha']);
+    if ($approvedSha === '') {
+        $this->warn('Approved release has empty commit SHA. Skipping.');
+
+        return self::SUCCESS;
+    }
+
+    $currentShaResult = Process::run('git rev-parse HEAD');
+    $currentSha = trim($currentShaResult->output());
+    if ($currentSha === '') {
+        $this->error('This folder does not appear to be a valid git checkout.');
+
+        return self::FAILURE;
+    }
+
+    $this->info('Approved release detected: '.substr($approvedSha, 0, 12));
+    $this->line('Current commit: '.substr($currentSha, 0, 12));
+
+    if (! $this->option('apply')) {
+        $this->comment('Dry mode only. Re-run with --apply to execute safe fast-forward update.');
+
+        return self::SUCCESS;
+    }
+
+    $statusOutput = trim(Process::run('git status --porcelain')->output());
+    if ($statusOutput !== '') {
+        $this->error('Working tree is not clean. Commit or stash local changes before auto-update.');
+
+        return self::FAILURE;
+    }
+
+    $fetchResult = Process::run('git fetch origin --prune');
+    if (! $fetchResult->successful()) {
+        $this->error('Failed to fetch latest commits from origin.');
+
+        return self::FAILURE;
+    }
+
+    $hasCommitResult = Process::run('git cat-file -e '.escapeshellarg($approvedSha).'^{commit}');
+    if (! $hasCommitResult->successful()) {
+        $this->error('Approved commit was not found locally after fetch.');
+
+        return self::FAILURE;
+    }
+
+    $checkoutResult = Process::run('git checkout '.escapeshellarg($targetBranch));
+    if (! $checkoutResult->successful()) {
+        $this->error("Unable to checkout target branch '{$targetBranch}'.");
+
+        return self::FAILURE;
+    }
+
+    $ancestorResult = Process::run('git merge-base --is-ancestor HEAD '.escapeshellarg($approvedSha));
+    if (! $ancestorResult->successful()) {
+        $this->error('Safe fast-forward is not possible (approved commit is behind/diverged from local HEAD).');
+        $this->line('No update was applied.');
+
+        return self::FAILURE;
+    }
+
+    $mergeResult = Process::run('git merge --ff-only '.escapeshellarg($approvedSha));
+    if (! $mergeResult->successful()) {
+        $this->error('Fast-forward merge failed. Update aborted safely.');
+
+        return self::FAILURE;
+    }
+
+    $this->info('Code fast-forward applied to approved commit.');
+    $this->line('Running migration and frontend build...');
+
+    $migrateExit = (int) $this->call('migrate', ['--force' => true]);
+    if ($migrateExit !== self::SUCCESS) {
+        $this->error('Database migration failed after code update.');
+
+        return self::FAILURE;
+    }
+
+    $buildResult = Process::timeout(1200)->run('npm run build');
+    if (! $buildResult->successful()) {
+        File::put(storage_path('logs/laptop-sync-build.log'), $buildResult->output().PHP_EOL.$buildResult->errorOutput());
+        $this->error('Frontend build failed. Check storage/logs/laptop-sync-build.log');
+
+        return self::FAILURE;
+    }
+
+    $this->info('Approved release update applied successfully.');
+
+    return self::SUCCESS;
+})->purpose('Sync and safely apply approved release from laptop 1');
