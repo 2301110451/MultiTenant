@@ -22,6 +22,8 @@ use App\Http\Controllers\Central\TenantController;
 use App\Http\Controllers\Central\TenantSubscriptionIntentController;
 use App\Http\Controllers\Central\UpdateAnnouncementController;
 use App\Http\Controllers\Central\FeatureLabController;
+use App\Http\Controllers\Central\ReleaseSmokeTestController;
+use App\Http\Controllers\Central\ReleaseChangelogTestController;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -118,6 +120,8 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
 
         Route::get('feature-lab', [FeatureLabController::class, 'index'])->name('feature-lab.index');
         Route::get('release-flow-test', [ReleaseFlowTestController::class, 'index'])->name('release-flow-test.index');
+        Route::get('release-smoke-test', [ReleaseSmokeTestController::class, 'index'])->name('release-smoke-test.index');
+        Route::get('release-changelog-test', [ReleaseChangelogTestController::class, 'index'])->name('release-changelog-test.index');
 
         Route::middleware('super.admin')->prefix('releases')->name('releases.')->group(function () {
             Route::get('/', [CentralReleaseController::class, 'index'])->name('index');
