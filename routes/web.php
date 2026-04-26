@@ -37,6 +37,10 @@ use App\Http\Controllers\Tenant\TenantAnnouncementController;
 use App\Http\Controllers\Tenant\UpdateFeedController;
 use App\Http\Controllers\Tenant\UserAppearanceController;
 use App\Http\Controllers\Tenant\UserManagementController;
+
+// ✅ ADD THIS LINE
+use App\Http\Controllers\Tenant\FeaturePreviewController;
+
 use App\Http\Middleware\EnsureCentralHost;
 use App\Http\Middleware\EnsureTenantHost;
 use App\Http\Middleware\IdentifyTenant;
@@ -64,6 +68,11 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     });
+
+    // ✅ YOUR NEW FEATURE ROUTE (TENANT SIDE)
+    Route::get('feature-preview', [FeaturePreviewController::class, 'index'])
+        ->name('tenant.feature-preview.index')
+        ->middleware('tenant.permission:updates.view');
 
     Route::middleware([EnsureCentralHost::class])->group(function () {
         Route::get('/tenant-login', [TenantLoginSelectorController::class, 'index'])->name('tenant.login.selector');
@@ -122,7 +131,7 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::get('release-smoke-test', [ReleaseSmokeTestController::class, 'index'])->name('release-smoke-test.index');
         Route::get('release-changelog-test', [ReleaseChangelogTestController::class, 'index'])->name('release-changelog-test.index');
 
-        // ✅ NEW SUPER ADMIN BUTTON ROUTE
+        // SUPER ADMIN BUTTON
         Route::middleware('super.admin')->get('test-button', function () {
             return view('central.test-button');
         })->name('test-button');
