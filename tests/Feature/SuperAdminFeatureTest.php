@@ -1,37 +1,69 @@
 <?php
 
-namespace Tests\Feature;
+use App\Http\Middleware\EnsureCentralHost;
+use App\Models\CentralUser;
+use App\Models\Release;
+use App\Services\CentralReleaseService;
+use Mockery;
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+it('allows super admin to sync new release from github', function () {
+    $this->withoutMiddleware(EnsureCentralHost::class);
 
-class SuperAdminFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+    $superAdmin = CentralUser::factory()->create([
+        'is_super_admin' => true,
+    ]);
 
-    public function test_super_admin_can_access_user_management_page(): void
-    {
-        $superAdmin = User::factory()->create([
-            'role' => 'super_admin', // adjust to your actual column/value
+    $mock = Mockery::mock(CentralReleaseService::class);
+    $mock->shouldReceive('syncLatestChanges')
+        ->once()
+        ->andReturn([
+            'release_id' => 999,
+            'is_new' => true,
+            'suggested_version' => 'v1.2.0',
+            'changes_detected' => ['feature'],
+            'files_affected' => ['app/Http/Controllers/NewFeatureController.php'],
+            'release_notes' => 'Detected new feature from latest commit',
+            'risk_level' => 'medium',
         ]);
 
-        $response = $this->actingAs($superAdmin)->get('/super-admin/users'); // adjust route
+    $this->app->instance(CentralReleaseService::class, $mock);
 
-        $response->assertStatus(200);
-        $response->assertSee('User Management'); // adjust text on your blade page
-    }
+    $response = $this
+        ->actingAs($superAdmin, 'web')
+        ->post('/central/releases/detect-and-store');
 
-    public function test_non_super_admin_cannot_access_user_management_page(): void
-    {
-        $regularUser = User::factory()->create([
-            'role' => 'user', // adjust to your actual value
-        ]);
+    $response->assertStatus(302);
+    $response->assertSessionHas('success');
+});
 
-        $response = $this->actingAs($regularUser)->get('/super-admin/users'); // adjust route
+it('allows super admin to approve detected release in central releases', function () {
+    $this->withoutMiddleware(EnsureCentralHost::class);
 
-        // Use whichever your app does: 403 OR redirect
-        $response->assertStatus(403);
-        // or: $response->assertRedirect('/home');
-    }
-}
+    $superAdmin = CentralUser::factory()->create([
+        'is_super_admin' => true,
+    ]);
+
+    $release = Release::query()->create([
+        'title' => 'New feature release',
+        'version' => null,
+        'suggested_version' => 'v1.2.0',
+        'release_type' => 'FEATURE',
+        'notes' => 'Initial detected release',
+        'status' => 'detected',
+        'changes_detected' => ['feature'],
+        'files_affected' => ['app/Services/NewFeatureService.php'],
+        'risk_level' => 'medium',
+        'source_commit_sha' => 'abc123def456',
+    ]);
+
+    $response = $this
+        ->actingAs($superAdmin, 'web')
+        ->post("/central/releases/{$release->id}/approve");
+
+    $response->assertStatus(302);
+    $response->assertSessionHas('success');
+
+    $release->refresh();
+    expect($release->status)->toBe('approved');
+    expect((int) $release->approved_by)->toBe((int) $superAdmin->id);
+});
