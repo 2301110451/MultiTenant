@@ -209,6 +209,8 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         Route::get('realtime/roles', [TenantRealtimeController::class, 'roles'])->name('realtime.roles')->middleware('tenant.permission:users.update');
         Route::get('realtime/support', [TenantRealtimeController::class, 'support'])->name('realtime.support')->middleware('tenant.permission:support.view');
         Route::get('realtime/updates', [TenantRealtimeController::class, 'updates'])->name('realtime.updates')->middleware('tenant.permission:updates.view');
+
+        Route::resource('modules', \App\Http\Controllers\ModuleController::class);
     });
 
 });
